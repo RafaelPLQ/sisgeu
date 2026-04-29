@@ -1,0 +1,70 @@
+{% load static %}
+{% if request.user.is_authenticated %}
+<aside class="sidebar">
+<!-- Logo -->
+    <div class="sidebar-logo">
+      <div class="logo-badge">
+        <div class="logo-icon">📊</div>
+        <div>
+          <div class="logo-text">SISGEU</div>
+          <div class="logo-sub">v1.0 · Protótipo</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grupo: Principal -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Principal</div>
+
+      <a href="">
+        <span class="icon">⬡</span> Dashboard
+      </a>
+
+      <a href="">
+        <span class="icon">↕</span> Lançamentos
+      </a>
+
+      <a href="">
+        <span class="icon">◈</span> Orçamento
+      </a>
+
+      <a href="">
+        <span class="icon">≡</span> Relatórios
+      </a>
+    </div>
+
+    <!-- Grupo: Planejamento -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Planejamento</div>
+
+      <a href="">
+        <span class="icon">◎</span> Metas Financeiras
+      </a>
+
+      <a href="">
+        <span class="icon">▲</span> Alertas
+      </a>
+    </div>
+
+
+    <!-- Perfil do usuário -->
+    <div class="sidebar-user">
+      <div class="avatar">{{ request.user.get_full_name|default:request.user.username|slice:":2"|upper }}</div>
+      <div class="user-info">
+        <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+        <div class="user-course">
+          {% if request.user.perfil.curso %}
+            {{ request.user.perfil.curso }}
+          {% else %}
+            Sem curso cadastrado
+          {% endif %}
+        </div>
+      </div>
+      <a href="{% url 'accounts:perfil' %}" class="btn-logout" title="Editar perfil" style="text-decoration:none; font-size:15px;">✎</a>
+      <form method="post" action="{% url 'accounts:logout' %}" style="margin:0">
+        {% csrf_token %}
+        <button type="submit" class="btn-logout" title="Sair">⎋</button>
+      </form>
+    </div>
+</aside>
+{% endif %}

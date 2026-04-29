@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+
+{% block title %}Meu Perfil · SISGEU{% endblock %}
+
+{% block content %}
+<div class="page active">
+
+  <div class="page-header">
+    <div>
+      <div class="page-title">Meu Perfil</div>
+      <div class="page-sub">Gerencie suas informações pessoais e segurança da conta</div>
+    </div>
+  </div>
+
+  {% if messages %}
+  {% for msg in messages %}
+    <div class="alert-item {% if 'success' in msg.tags %}success{% else %}error{% endif %}">
+      {{ msg }}
+    </div>
+  {% endfor %}
+{% endif %}
+
+  <div class="grid2" style="align-items: start; gap: 20px;">
+
+    <!-- Dados pessoais -->
+    <div class="widget">
+      <div class="widget-header">
+        <div class="widget-title">Dados Pessoais</div>
+      </div>
+
+      <form method="post" action="{% url 'accounts:perfil' %}">
+        {% csrf_token %}
+        <input type="hidden" name="acao" value="perfil">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nome completo</label>
+            <input class="form-input {% if perfil_form.nome.errors %}input-error{% endif %}"
+                   type="text" name="nome"
+                   value="{{ perfil_form.nome.value|default:'' }}"
+                   placeholder="Seu nome" required />
+            {% if perfil_form.nome.errors %}
+              <span style="font-size: 11px; color: var(--red);">{{ perfil_form.nome.errors.0 }}</span>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Data de nascimento</label>
+            <input class="form-input {% if perfil_form.data_nascimento.errors %}input-error{% endif %}"
+                   type="date" name="data_nascimento"
+                   value="{{ perfil_form.data_nascimento.value|default:'' }}" />
+            {% if perfil_form.data_nascimento.errors %}
+              <span style="font-size: 11px; color: var(--red);">{{ perfil_form.data_nascimento.errors.0 }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">E-mail</label>
+          <input class="form-input {% if perfil_form.email.errors %}input-error{% endif %}"
+                 type="email" name="email"
+                 value="{{ perfil_form.email.value|default:'' }}"
+                 placeholder="seu@email.com" required />
+          {% if perfil_form.email.errors %}
+            <span style="font-size: 11px; color: var(--red);">{{ perfil_form.email.errors.0 }}</span>
+          {% endif %}
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Curso</label>
+            <input class="form-input {% if perfil_form.curso.errors %}input-error{% endif %}"
+                   type="text" name="curso"
+                   value="{{ perfil_form.curso.value|default:'' }}"
+                   placeholder="Ex: Engenharia de Software" />
+            {% if perfil_form.curso.errors %}
+              <span style="font-size: 11px; color: var(--red);">{{ perfil_form.curso.errors.0 }}</span>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Instituição</label>
+            <input class="form-input {% if perfil_form.instituicao.errors %}input-error{% endif %}"
+                   type="text" name="instituicao"
+                   value="{{ perfil_form.instituicao.value|default:'' }}"
+                   placeholder="Ex: UFMG" />
+            {% if perfil_form.instituicao.errors %}
+              <span style="font-size: 11px; color: var(--red);">{{ perfil_form.instituicao.errors.0 }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+          <button type="submit" class="btn btn-primary">Salvar alterações</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Alterar senha -->
+    <div class="widget">
+      <div class="widget-header">
+        <div class="widget-title">Alterar Senha</div>
+      </div>
+
+      <form method="post" action="{% url 'accounts:perfil' %}">
+        {% csrf_token %}
+        <input type="hidden" name="acao" value="senha">
+
+        <div class="form-group">
+          <label class="form-label">Senha atual</label>
+          <input class="form-input {% if senha_form.senha_atual.errors %}input-error{% endif %}"
+                 type="password" name="senha_atual"
+                 placeholder="••••••••" />
+          {% if senha_form.senha_atual.errors %}
+            <span style="font-size: 11px; color: var(--red);">{{ senha_form.senha_atual.errors.0 }}</span>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Nova senha</label>
+          <input class="form-input {% if senha_form.nova_senha.errors %}input-error{% endif %}"
+                 type="password" name="nova_senha"
+                 placeholder="••••••••" />
+          {% if senha_form.nova_senha.errors %}
+            <span style="font-size: 11px; color: var(--red);">{{ senha_form.nova_senha.errors.0 }}</span>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Confirmar nova senha</label>
+          <input class="form-input {% if senha_form.confirmar_senha.errors %}input-error{% endif %}"
+                 type="password" name="confirmar_senha"
+                 placeholder="••••••••" />
+          {% if senha_form.confirmar_senha.errors %}
+            <span style="font-size: 11px; color: var(--red);">{{ senha_form.confirmar_senha.errors.0 }}</span>
+          {% endif %}
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+          <button type="submit" class="btn btn-danger">Alterar senha</button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block login %}
+<div id="page-login" class="show">
+  <div class="login-box">
+    <div class="login-logo">🎓</div>
+    <div class="login-title">SISGEU</div>
+    <div class="login-sub">Sistema de Gestão Econômica Universitária</div>
+
+    <form class="login-form" method="post" action="{% url 'accounts:login' %}">
+      {% csrf_token %}
+
+      {% if error %}
+        <div style="background: var(--red-bg); border: 1px solid var(--red); border-radius: 6px; padding: 10px 12px; margin-bottom: 16px; font-size: 13px; color: var(--red);">
+          {{ error }}
+        </div>
+      {% endif %}
+
+      <div class="form-group">
+        <label class="form-label">E-mail</label>
+        <input class="form-input" type="email" name="username"
+               value="{{ request.POST.username|default:'' }}"
+               placeholder="seu@email.com" required autofocus />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Senha</label>
+        <input class="form-input" type="password" name="password"
+               placeholder="••••••••" required />
+      </div>
+
+      <button class="login-btn" type="submit">Entrar →</button>
+
+      <div class="login-hint" style="text-align: center; margin-top: 20px; display: flex; justify-content: space-between;">
+        <a href="{% url 'password_reset' %}" style="color: var(--text3); text-decoration: none; font-size: 12px;">
+          Esqueci minha senha
+        </a>
+        <a href="{% url 'accounts:cadastro' %}" style="color: var(--blue); text-decoration: none; font-size: 12px;">
+          Criar conta
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block login %}
+<div id="page-login" class="show">
+  <div class="login-box" style="width: 440px;">
+    <div class="login-logo">🎓</div>
+    <div class="login-title">Criar Conta</div>
+    <div class="login-sub">Preencha os dados para se cadastrar no SISGEU</div>
+
+    <form class="login-form" method="post" action="{% url 'accounts:cadastro' %}">
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div style="background: var(--red-bg); border: 1px solid var(--red); border-radius: 6px; padding: 10px 12px; margin-bottom: 16px; font-size: 13px; color: var(--red);">
+          {{ form.non_field_errors.0 }}
+        </div>
+      {% endif %}
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nome completo</label>
+          <input class="form-input {% if form.nome.errors %}input-error{% endif %}"
+                 type="text" name="nome"
+                 value="{{ form.nome.value|default:'' }}"
+                 placeholder="Seu nome" required autofocus />
+          {% if form.nome.errors %}
+            <span style="font-size: 11px; color: var(--red);">{{ form.nome.errors.0 }}</span>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Data de nascimento</label>
+          <input class="form-input {% if form.data_nascimento.errors %}input-error{% endif %}"
+                 type="date" name="data_nascimento"
+                 value="{{ form.data_nascimento.value|default:'' }}" required />
+          {% if form.data_nascimento.errors %}
+            <span style="font-size: 11px; color: var(--red);">{{ form.data_nascimento.errors.0 }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">E-mail</label>
+        <input class="form-input {% if form.email.errors %}input-error{% endif %}"
+               type="email" name="email"
+               value="{{ form.email.value|default:'' }}"
+               placeholder="seu@email.com" required />
+        {% if form.email.errors %}
+          <span style="font-size: 11px; color: var(--red);">{{ form.email.errors.0 }}</span>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Senha</label>
+        <input class="form-input {% if form.senha.errors %}input-error{% endif %}"
+               type="password" name="senha"
+               placeholder="••••••••" required />
+        {% if form.senha.errors %}
+          <span style="font-size: 11px; color: var(--red);">{{ form.senha.errors.0 }}</span>
+        {% endif %}
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Curso</label>
+          <input class="form-input {% if form.curso.errors %}input-error{% endif %}"
+                 type="text" name="curso"
+                 value="{{ form.curso.value|default:'' }}"
+                 placeholder="Ex: Engenharia de Software" required />
+          {% if form.curso.errors %}
+            <span style="font-size: 11px; color: var(--red);">{{ form.curso.errors.0 }}</span>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Instituição</label>
+          <input class="form-input {% if form.instituicao.errors %}input-error{% endif %}"
+                 type="text" name="instituicao"
+                 value="{{ form.instituicao.value|default:'' }}"
+                 placeholder="Ex: UFMG" required />
+          {% if form.instituicao.errors %}
+            <span style="font-size: 11px; color: var(--red);">{{ form.instituicao.errors.0 }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <button class="login-btn" type="submit">Criar conta →</button>
+
+      <div class="login-hint" style="text-align: center; margin-top: 16px;">
+        <a href="{% url 'accounts:login' %}" style="color: var(--text3); text-decoration: none; font-size: 12px;">
+          Já tem conta? Entrar
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
