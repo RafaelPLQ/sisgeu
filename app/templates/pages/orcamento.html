@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}Orçamento{% endblock %}
+
+{% block content %}
+
+<div class="page active" id="pg-orcamento">
+
+      <div class="page-header">
+        <div>
+          <div class="page-title">Orçamento Mensal</div>
+          <div class="page-sub">Gerencie seus limites de gastos por categoria</div>
+        </div>
+        <button class="btn btn-primary" onclick="document.getElementById('budget-form').submit()">Salvar Alterações</button>
+      </div>
+
+      <div class="cards-row">
+        <div class="stat-card green">
+          <div class="stat-label">Orçamento Total</div>
+          <div class="stat-value green mono">R$ {{ total_budget|floatformat:2 }}</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">Gasto Até Agora</div>
+          <div class="stat-value red mono">R$ {{ total_spent|floatformat:2 }}</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-label">Disponível</div>
+          <div class="stat-value blue mono">R$ {{ total_available|floatformat:2 }}</div>
+        </div>
+        <div class="stat-card yellow">
+          <div class="stat-label">% Utilizado</div>
+          <div class="stat-value yellow mono">{{ budget_used_percent|floatformat:1 }}%</div>
+        </div>
+      </div>
+
+      <div class="grid2">
+
+        <div class="widget">
+          <div class="widget-header">
+            <span class="widget-title">Limites por Categoria</span>
+            <button class="btn btn-secondary" style="font-size: 12px; padding: 4px 12px;" onclick="openModal('modal-add-category')">+ Adicionar</button>
+          </div>
+          <div class="widget-body">
+            <form id="budget-form" method="post" action="{% url 'save_budget' %}">
+              {% csrf_token %}
+              <div id="budget-items">
+                {% for item in budget_items %}
+                <div class="progress-item" style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px">
+                  <div class="progress-top">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                      <span class="progress-name">{{ item.category.icon }} {{ item.category.name }}</span>
+                      <div style="display:flex;gap:4px">
+                        <button type="button" class="btn btn-sm btn-outline" onclick="editCategory({{ item.category.id }}, '{{ item.category.name }}', '{{ item.category.icon }}')" title="Editar categoria">✏️</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteCategory({{ item.category.id }}, '{{ item.category.name }}')" title="Excluir categoria">🗑️</button>
+                      </div>
+                    </div>
+                    <input class="form-input mono" style="width:110px;text-align:right;padding:4px 8px;font-size:13px" name="budget_{{ item.category.id }}" value="{{ item.amount|floatformat:2 }}" />
+                  </div>
+                  <div style="margin:8px 0 4px">
+                    <div class="progress-bar" style="height:8px"><div class="progress-fill {{ item.status }}" style="width:{{ item.percent|floatformat:0 }}%"></div></div>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3)">
+                    <span>Gasto: R$ {{ item.spent|floatformat:2 }}</span>
+                    <span class="mono" style="color:var(--{{ item.status }});">{{ item.percent|floatformat:0 }}% usado{% if item.percent >= 80 %} {% if item.status == 'red' %}🚨{% else %}⚠️{% endif %}{% endif %}</span>
+                  </div>
+                </div>
+                {% endfor %}
+                {% if budget_items|length == 0 %}
+                <p>Não há categorias cadastradas para montar o orçamento.</p>
+                {% endif %}
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="widget">
+          <div class="widget-header">
+            <span class="widget-title">Distribuição do Orçamento</span>
+          </div>
+          <div class="widget-body">
+            <div class="chart-wrap" style="height:260px">
+              <canvas id="chartOrcamento"></canvas>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /pg-orcamento -->
+
+{% endblock %}
+
+<script>
+  // Variáveis específicas da página de orçamento
+  const orcamento_labels = {{ orcamento_labels|safe }};
+  const orcamento_values = {{ orcamento_values|safe }};
+</script>

@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Relatórios{% endblock %}
+
+{% block content %}
+
+<div class="page active" id="pg-relatorios">
+
+      <div class="page-header">
+        <div>
+          <div class="page-title">Relatórios Financeiros</div>
+          <div class="page-sub">Análise e histórico dos seus gastos</div>
+        </div>
+        <button class="btn btn-secondary" onclick="showToast('📥 Relatório exportado em PDF!')">↓ Exportar PDF</button>
+      </div>
+
+      <div class="widget section-gap">
+        <div class="widget-header">
+          <span class="widget-title">Evolução Mensal – Últimos 6 Meses</span>
+        </div>
+        <div class="widget-body">
+          <div class="chart-wrap" style="height:240px">
+            <canvas id="chartLine"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid2">
+
+        <div class="widget">
+          <div class="widget-header">
+            <span class="widget-title">Gastos por Categoria – Mês Atual</span>
+          </div>
+          <div class="widget-body" style="padding:0">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Categoria</th>
+                  <th style="text-align:right">Gasto</th>
+                  <th style="text-align:right">% Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in category_expenses %}
+                <tr>
+                  <td>{{ item.category__name }}</td>
+                  <td class="mono" style="text-align:right">R$ {{ item.total|floatformat:2 }}</td>
+                  <td style="text-align:right"><span class="tag blue">{{ item.total|floatformat:2 }}</span></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" style="text-align:center;padding:20px">Nenhum gasto registrado neste mês.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="widget">
+          <div class="widget-header">
+            <span class="widget-title">Resumo Semestral</span>
+          </div>
+          <div class="widget-body" style="padding:0">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Mês</th>
+                  <th style="text-align:right">Receita</th>
+                  <th style="text-align:right">Despesa</th>
+                  <th style="text-align:right">Saldo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in semestral %}
+                <tr>
+                  <td class="mono" style="font-size:12px">{{ row.month }}</td>
+                  <td class="mono" style="text-align:right;color:var(--green);font-size:12px">R$ {{ row.income|floatformat:2 }}</td>
+                  <td class="mono" style="text-align:right;color:var(--red);font-size:12px">R$ {{ row.expense|floatformat:2 }}</td>
+                  <td class="mono" style="text-align:right;font-weight:700;font-size:12px">R$ {{ row.balance|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" style="text-align:center;padding:20px">Sem dados para o período.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div><!-- /pg-relatorios -->
+
+{% endblock %}
+
+<script>
+  const line_labels = {{ line_labels|safe }};
+  const line_income = {{ line_income|safe }};
+  const line_expense = {{ line_expense|safe }};
+  const line_balance = {{ line_balance|safe }};
+</script>

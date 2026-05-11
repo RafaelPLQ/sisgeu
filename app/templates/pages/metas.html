@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+
+{% block title %}Metas{% endblock %}
+
+{% block content %}
+
+<div class="page active" id="pg-metas">
+
+      <div class="page-header">
+        <div>
+          <div class="page-title">Metas Financeiras</div>
+          <div class="page-sub">Acompanhe seus objetivos de poupança</div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('modal-meta')">+ Nova Meta</button>
+      </div>
+
+      <div class="cards-row">
+        <div class="stat-card blue">
+          <div class="stat-label">Metas Ativas</div>
+          <div class="stat-value blue mono">{{ goal_count }}</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Total Poupado</div>
+          <div class="stat-value green mono">R$ {{ total_saved|floatformat:2 }}</div>
+        </div>
+        <div class="stat-card yellow">
+          <div class="stat-label">Total Almejado</div>
+          <div class="stat-value yellow mono">R$ {{ total_target|floatformat:2 }}</div>
+        </div>
+        <div class="stat-card green" onclick="toggleMetasConcluidas()">
+          <div class="stat-label">Metas Concluídas</div>
+          <div class="stat-value green mono">{{ completed_count }} ✓</div>
+        </div>
+      </div>
+
+      <div id="metas-list">
+        <div class="metas-section">
+          <h3>Metas Ativas</h3>
+          {% for goal in goals_ativas %}
+          <div class="meta-card">
+            <div class="meta-top">
+              <div>
+                <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">{{ goal.icon }} {{ goal.name }}</div>
+                <div class="meta-name">{{ goal.name }}</div>
+              </div>
+              <div class="meta-pct">{{ goal.progress_percent|floatformat:0 }}%</div>
+            </div>
+            <div class="progress-bar" style="height:10px"><div class="progress-fill {% if goal.progress_percent < 50 %}yellow{% elif goal.progress_percent < 100 %}blue{% else %}green{% endif %}" style="width:{{ goal.progress_percent|floatformat:0 }}%"></div></div>
+            <div class="meta-vals">
+              <span>Poupado: R$ {{ goal.current_amount|floatformat:2 }}</span>
+              <span>Meta: R$ {{ goal.target_amount|floatformat:2 }}</span>
+              {% if goal.deadline %}
+              <span>Prazo: {{ goal.deadline|date:'M/Y' }}</span>
+              {% endif %}
+            </div>
+            {% if goal.deposit_set.exists %}
+            <div class="meta-history" style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
+              <div style="font-size:12px;color:var(--text3);margin-bottom:5px">📅 Histórico de Depósitos:</div>
+              <ul style="list-style:none;padding:0;margin:0;">
+                {% for deposit in goal.recent_deposits %}
+                <li style="font-size:11px;color:var(--text2);margin-bottom:4px;padding-left:15px;position:relative;">
+                  <span style="position:absolute;left:0;">💰</span>
+                  R$ {{ deposit.amount|floatformat:2 }} em {{ deposit.date|date:'d/m/Y' }}
+                  <button class="btn btn-xs btn-outline" style="margin-left:10px;font-size:10px;padding:2px 5px;" onclick="openEditDepositModal({{ deposit.id }}, {{ deposit.amount }}, '{{ deposit.date|date:'Y-m-d' }}', {{ goal.id }}, '{{ goal.name|escapejs }}')">Editar</button>
+                  <button class="btn btn-xs btn-danger" style="margin-left:5px;font-size:10px;padding:2px 5px;" onclick="openDeleteDepositModal({{ deposit.id }}, {{ deposit.amount }}, '{{ deposit.date|date:'Y-m-d' }}', '{{ goal.name|escapejs }}')">Excluir</button>
+                </li>
+                {% endfor %}
+              </ul>
+              {% if goal.deposit_set.count > 5 %}
+              <div style="font-size:11px;color:var(--text3);margin-top:5px;">... e mais {{ goal.deposit_set.count|add:-5 }} depósitos</div>
+              {% endif %}
+            </div>
+            {% endif %}
+            <div class="meta-actions" style="margin-top:10px;text-align:right">
+              <button class="btn btn-sm btn-outline" onclick="openEditMetaModal({{ goal.id }}, '{{ goal.name|escapejs }}', {{ goal.target_amount }}, '', '{{ goal.icon|escapejs }}')">Editar</button>
+              <button class="btn btn-sm btn-danger" onclick="openDeleteMetaModal({{ goal.id }}, '{{ goal.name|escapejs }}')">Excluir</button>
+              <button class="btn btn-sm btn-primary" onclick="openDepositModal({{ goal.id }}, '{{ goal.name|escapejs }}')">Depositar</button>
+            </div>
+          </div>
+          {% empty %}
+          <p>Nenhuma meta ativa. Crie uma meta para começar a acompanhar seu progresso.</p>
+          {% endfor %}
+        </div>
+
+        <div class="metas-section" id="metas-concluidas-section" style="display: none; margin-top:30px;">
+          <h3>Metas Concluídas</h3>
+          {% for goal in goals_concluidas %}
+          <div class="meta-card" style="border-color:var(--green);background:rgba(63,185,80,0.05)">
+            <div class="meta-top">
+              <div>
+                <div style="font-size:10px;color:var(--green);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">{{ goal.icon }} {{ goal.name }}</div>
+                <div class="meta-name">{{ goal.name }}</div>
+              </div>
+              <div class="meta-pct" style="color:var(--green)">{{ goal.progress_percent|floatformat:0 }}%</div>
+            </div>
+            <div class="progress-bar" style="height:10px"><div class="progress-fill green" style="width:{{ goal.progress_percent|floatformat:0 }}%"></div></div>
+            <div class="meta-vals">
+              <span>Poupado: R$ {{ goal.current_amount|floatformat:2 }}</span>
+              <span>Meta: R$ {{ goal.target_amount|floatformat:2 }}</span>
+              {% if goal.deadline %}
+              <span>Prazo: {{ goal.deadline|date:'M/Y' }}</span>
+              {% endif %}
+              <span style="color:var(--green)">🎉 Concluída!</span>
+            </div>
+            {% if goal.deposit_set.exists %}
+            <div class="meta-history" style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
+              <div style="font-size:12px;color:var(--text3);margin-bottom:5px">📅 Histórico de Depósitos:</div>
+              <ul style="list-style:none;padding:0;margin:0;">
+                {% for deposit in goal.recent_deposits %}
+                <li style="font-size:11px;color:var(--text2);margin-bottom:4px;padding-left:15px;position:relative;">
+                  <span style="position:absolute;left:0;">💰</span>
+                  R$ {{ deposit.amount|floatformat:2 }} em {{ deposit.date|date:'d/m/Y' }}
+                  <button class="btn btn-xs btn-outline" style="margin-left:10px;font-size:10px;padding:2px 5px;" onclick="openEditDepositModal({{ deposit.id }}, {{ deposit.amount }}, '{{ deposit.date|date:'Y-m-d' }}', {{ goal.id }}, '{{ goal.name|escapejs }}')">Editar</button>
+                  <button class="btn btn-xs btn-danger" style="margin-left:5px;font-size:10px;padding:2px 5px;" onclick="openDeleteDepositModal({{ deposit.id }}, {{ deposit.amount }}, '{{ deposit.date|date:'Y-m-d' }}', '{{ goal.name|escapejs }}')">Excluir</button>
+                </li>
+                {% endfor %}
+              </ul>
+              {% if goal.deposit_set.count > 5 %}
+              <div style="font-size:11px;color:var(--text3);margin-top:5px;">... e mais {{ goal.deposit_set.count|add:-5 }} depósitos</div>
+              {% endif %}
+            </div>
+            {% endif %}
+            <div class="meta-actions" style="margin-top:10px;text-align:right">
+              <button class="btn btn-sm btn-outline" onclick="openEditMetaModal({{ goal.id }}, '{{ goal.name|escapejs }}', {{ goal.target_amount }}, '', '{{ goal.icon|escapejs }}')">Editar</button>
+              <button class="btn btn-sm btn-danger" onclick="openDeleteMetaModal({{ goal.id }}, '{{ goal.name|escapejs }}')">Excluir</button>
+            </div>
+          </div>
+          {% empty %}
+          <p>Nenhuma meta concluída ainda.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div><!-- /pg-metas -->
+
+{% endblock %}

@@ -95,23 +95,92 @@ document.querySelectorAll('.modal-overlay').forEach(modal => {
  *
  * @param {string} tipo - 'despesa' ou 'receita'
  */
-function setTipo(tipo) {
-  const btnDespesa = document.getElementById('btn-despesa');
-  const btnReceita = document.getElementById('btn-receita');
+function getCSRFToken() {
+  const meta = document.querySelector('meta[name="csrf-token"]');
+  if (meta) return meta.content;
 
-  btnDespesa.className = 'btn ' + (tipo === 'despesa' ? 'btn-danger'    : 'btn-secondary');
-  btnReceita.className = 'btn ' + (tipo === 'receita' ? 'btn-primary'   : 'btn-secondary');
+  const name = 'csrftoken=';
+  const cookies = document.cookie.split(';');
+  for (let cookie of cookies) {
+    cookie = cookie.trim();
+    if (cookie.startsWith(name)) return cookie.substring(name.length);
+  }
+  return null;
+}
+
+function openTransactionForm(type) {
+  closeModal('modal-add');
+  if (type === 'income') {
+    openModal('modal-add-income');
+  } else {
+    openModal('modal-add-expense');
+  }
 }
 
 /* 4.2 Salvamento de Lançamento */
 
 /**
  * Processa o salvamento de um novo lançamento financeiro.
- * (Protótipo: apenas fecha o modal e exibe confirmação via toast.)
  */
-function saveTransaction() {
-  closeModal('modal-add');
-  showToast('✅ Lançamento salvo com sucesso!');
+function saveTransaction(type) {
+  const isIncome = type === 'income';
+  const description = document.getElementById(isIncome ? 'input-description-income' : 'input-description-expense').value.trim();
+  const amount = document.getElementById(isIncome ? 'input-amount-income' : 'input-amount-expense').value;
+  const date = document.getElementById(isIncome ? 'input-date-income' : 'input-date-expense').value;
+  const csrf = getCSRFToken();
+
+  // Para despesas, categoria é obrigatória
+  if (!isIncome) {
+    const category = document.getElementById('input-category-expense').value;
+    if (!description || !amount || !date || !category) {
+      showToast('⚠️ Preencha todos os campos antes de salvar.');
+      return;
+    }
+  } else {
+    // Para receitas, apenas fonte é necessária
+    if (!description || !amount || !date) {
+      showToast('⚠️ Preencha todos os campos antes de salvar.');
+      return;
+    }
+  }
+
+  const payload = {
+    type,
+    description,
+    amount,
+    date,
+  };
+
+  // Adiciona categoria/fonte conforme o tipo
+  if (!isIncome) {
+    payload.category = document.getElementById('input-category-expense').value;
+    payload.extra = document.getElementById('input-payment-method').value;
+  } else {
+    // Para receita, deixa em branco ou usa a primeira categoria
+    payload.category = ''; // Backend vai usar padrão
+    payload.extra = document.getElementById('input-income-source').value;
+  }
+
+  fetch('/add-transaction/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrf,
+    },
+    body: JSON.stringify(payload),
+  }).then(async response => {
+    if (response.ok) {
+      closeModal(type === 'income' ? 'modal-add-income' : 'modal-add-expense');
+      showToast('✅ Lançamento salvo com sucesso!');
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      const payload = await response.json().catch(() => null);
+      showToast(payload?.error || '❌ Erro ao salvar.');
+    }
+  }).catch(error => {
+    console.error('saveTransaction error:', error);
+    showToast('❌ Erro de conexão.');
+  });
 }
 
 /* 4.3 Salvamento de Meta */
@@ -121,8 +190,579 @@ function saveTransaction() {
  * (Protótipo: apenas fecha o modal e exibe confirmação via toast.)
  */
 function saveMeta() {
-  closeModal('modal-meta');
-  showToast('🎯 Meta criada com sucesso!');
+  const name = document.getElementById('input-meta-name').value.trim();
+  const target = document.getElementById('input-meta-target').value;
+  const deadlineMonth = document.getElementById('input-prazo').value;
+  const icon = document.getElementById('input-meta-icon').value;
+  const csrf = getCSRFToken();
+
+  if (!name || !target) {
+    showToast('⚠️ Nome e valor alvo são obrigatórios.');
+    return;
+  }
+
+  const deadline = deadlineMonth ? `${deadlineMonth}-01` : '';
+
+  fetch('/save-goal/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrf,
+    },
+    body: JSON.stringify({
+      name,
+      target_amount: target,
+      deadline,
+      icon,
+    }),
+  }).then(async response => {
+    if (response.ok) {
+      closeModal('modal-meta');
+      showToast('🎯 Meta criada com sucesso!');
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      const payload = await response.json().catch(() => null);
+      showToast(payload?.error || '❌ Erro ao salvar a meta.');
+    }
+  }).catch(error => {
+    console.error('saveMeta error:', error);
+    showToast('❌ Erro de conexão.');
+  });
+}
+
+/* 4.3.1 Editar Meta */
+
+/**
+ * Abre o modal de edição para uma meta específica.
+ */
+function openEditMetaModal(goalId, name, target, deadline, icon) {
+  document.getElementById('edit-meta-id').value = goalId;
+  document.getElementById('edit-meta-name').value = name;
+  document.getElementById('edit-meta-target').value = target;
+  document.getElementById('edit-meta-prazo').value = deadline;
+  document.getElementById('edit-meta-icon').value = icon;
+  openModal('modal-edit-meta');
+}
+
+/**
+ * Processa a atualização de uma meta financeira.
+ */
+function updateMeta() {
+  const id = document.getElementById('edit-meta-id').value;
+  const name = document.getElementById('edit-meta-name').value.trim();
+  const target = document.getElementById('edit-meta-target').value;
+  const deadlineMonth = document.getElementById('edit-meta-prazo').value;
+  const icon = document.getElementById('edit-meta-icon').value;
+  const csrf = getCSRFToken();
+
+  if (!name || !target) {
+    showToast('⚠️ Nome e valor alvo são obrigatórios.');
+    return;
+  }
+
+  const deadline = deadlineMonth ? `${deadlineMonth}-01` : '';
+
+  fetch(`/update-goal/${id}/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrf,
+    },
+    body: JSON.stringify({
+      name,
+      target_amount: target,
+      deadline,
+      icon,
+    }),
+  }).then(async response => {
+    if (response.ok) {
+      closeModal('modal-edit-meta');
+      showToast('🎯 Meta atualizada com sucesso!');
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      const payload = await response.json().catch(() => null);
+      showToast(payload?.error || '❌ Erro ao atualizar a meta.');
+    }
+  }).catch(error => {
+    console.error('updateMeta error:', error);
+    showToast('❌ Erro de conexão.');
+  });
+}
+
+/* 4.3.2 Excluir Meta */
+
+/**
+ * Abre o modal de confirmação de exclusão para uma meta específica.
+ */
+function openDeleteMetaModal(goalId, name) {
+  document.getElementById('delete-meta-id').value = goalId;
+  document.getElementById('delete-meta-name').textContent = name;
+  openModal('modal-delete-meta');
+}
+
+/**
+ * Confirma e processa a exclusão de uma meta financeira.
+ */
+function confirmDeleteMeta() {
+  const id = document.getElementById('delete-meta-id').value;
+  const csrf = getCSRFToken();
+
+  fetch(`/delete-goal/${id}/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrf,
+    },
+  }).then(async response => {
+    if (response.ok) {
+      closeModal('modal-delete-meta');
+      showToast('🗑️ Meta excluída com sucesso!');
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      const payload = await response.json().catch(() => null);
+      showToast(payload?.error || '❌ Erro ao excluir a meta.');
+    }
+  }).catch(error => {
+    console.error('confirmDeleteMeta error:', error);
+    showToast('❌ Erro de conexão.');
+  });
+}
+
+/* 4.3.3 Editar Depósito */
+
+/**
+ * Abre o modal de edição para um depósito específico.
+ */
+function openEditDepositModal(depositId, amount, date, goalId, goalName) {
+  document.getElementById('edit-deposit-id').value = depositId;
+  document.getElementById('edit-deposit-goal-id').value = goalId;
+  document.getElementById('edit-deposit-amount').value = amount;
+  document.getElementById('edit-deposit-date').value = date;
+  document.querySelector('#modal-edit-deposit .modal-title').textContent = `Editar Depósito em ${goalName}`;
+  openModal('modal-edit-deposit');
+}
+
+/**
+ * Processa a atualização de um depósito.
+ */
+function updateDeposit() {
+  const depositId = document.getElementById('edit-deposit-id').value;
+  const goalId = document.getElementById('edit-deposit-goal-id').value;
+  const amount = document.getElementById('edit-deposit-amount').value;
+  const date = document.getElementById('edit-deposit-date').value;
+  const csrf = getCSRFToken();
+
+  if (!amount || amount <= 0) {
+    showToast('⚠️ Valor do depósito deve ser maior que zero.');
+    return;
+  }
+
+  fetch(`/update-deposit/${depositId}/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrf,
+    },
+    body: JSON.stringify({
+      amount: amount,
+      date: date,
+      goal_id: goalId,
+    }),
+  }).then(async response => {
+    if (response.ok) {
+      closeModal('modal-edit-deposit');
+      showToast('💰 Depósito atualizado com sucesso!');
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      const payload = await response.json().catch(() => null);
+      showToast(payload?.error || '❌ Erro ao atualizar o depósito.');
+    }
+  }).catch(error => {
+    console.error('updateDeposit error:', error);
+    showToast('❌ Erro de conexão.');
+  });
+}
+
+/**
+ * Abre o modal de exclusão de depósito.
+ */
+function openDeleteDepositModal(depositId, amount, date, goalName) {
+  document.getElementById('delete-deposit-id').value = depositId;
+  document.getElementById('delete-deposit-info').textContent = `Valor: R$ ${parseFloat(amount).toFixed(2)} | Data: ${new Date(date).toLocaleDateString('pt-BR')} | Meta: ${goalName}`;
+  openModal('modal-delete-deposit');
+}
+
+/**
+ * Processa a exclusão de um depósito.
+ */
+function deleteDeposit() {
+  const depositId = document.getElementById('delete-deposit-id').value;
+  const csrf = getCSRFToken();
+
+  fetch(`/delete-deposit/${depositId}/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrf,
+    },
+    body: JSON.stringify({}),
+  }).then(async response => {
+    if (response.ok) {
+      closeModal('modal-delete-deposit');
+      showToast('🗑️ Depósito excluído com sucesso!');
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      const payload = await response.json().catch(() => null);
+      showToast(payload?.error || '❌ Erro ao excluir o depósito.');
+    }
+  }).catch(error => {
+    console.error('deleteDeposit error:', error);
+    showToast('❌ Erro de conexão.');
+  });
+}
+
+/* 4.4 Depositar na Meta */
+
+/**
+ * Abre o modal de depósito para uma meta específica.
+ */
+function openDepositModal(goalId, goalName) {
+  document.getElementById('input-deposit-goal-id').value = goalId;
+  document.querySelector('#modal-deposit .modal-title').textContent = `Depositar em ${goalName}`;
+  openModal('modal-deposit');
+}
+
+/**
+ * Processa o depósito em uma meta financeira.
+ */
+function saveDeposit() {
+  const goalId = document.getElementById('input-deposit-goal-id').value;
+  const amount = document.getElementById('input-deposit-amount').value;
+  const csrf = getCSRFToken();
+
+  if (!amount || parseFloat(amount) <= 0) {
+    showToast('⚠️ Insira um valor válido para o depósito.');
+    return;
+  }
+
+  fetch('/deposit-goal/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrf,
+    },
+    body: JSON.stringify({
+      goal_id: goalId,
+      deposit_amount: amount,
+    }),
+  }).then(async response => {
+    if (response.ok) {
+      closeModal('modal-deposit');
+      showToast('💰 Depósito realizado com sucesso!');
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      const payload = await response.json().catch(() => null);
+      showToast(payload?.error || '❌ Erro ao depositar.');
+    }
+  }).catch(error => {
+    console.error('saveDeposit error:', error);
+    showToast('❌ Erro de conexão.');
+  });
+}
+
+function markAlertsRead() {
+  const csrf = document.querySelector('meta[name="csrf-token"]').content;
+  fetch('/mark-alerts-read/', {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': csrf,
+    },
+  }).then(response => {
+    if (response.ok) {
+      showToast('✅ Todos os alertas foram lidos!');
+      setTimeout(() => location.reload(), 800);
+    }
+  });
+}
+
+// =====================================================
+// FUNCIONALIDADES DA PÁGINA DE ORÇAMENTO
+// =====================================================
+
+// Aguardar o DOM carregar completamente
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('DOM carregado - inicializando funcionalidades de orçamento');
+  
+  // Inicializar paletas de emojis
+  initEmojiPalettes();
+  
+  // Event listener para o botão salvar categoria
+  const saveButton = document.getElementById('btn-save-category');
+  if (saveButton) {
+    saveButton.addEventListener('click', saveCategory);
+    console.log('Event listener adicionado ao botão salvar categoria');
+  } else {
+    console.log('Botão salvar categoria não encontrado na página atual');
+  }
+
+  // Event listener para o botão atualizar categoria
+  const updateButton = document.getElementById('btn-update-category');
+  if (updateButton) {
+    updateButton.addEventListener('click', updateCategory);
+    console.log('Event listener adicionado ao botão atualizar categoria');
+  }
+
+  // Event listener para o botão confirmar exclusão
+  const deleteButton = document.getElementById('btn-confirm-delete');
+  if (deleteButton) {
+    deleteButton.addEventListener('click', confirmDeleteCategory);
+    console.log('Event listener adicionado ao botão confirmar exclusão');
+  }
+});
+
+// Inicializar paletas de emojis com event listeners
+function initEmojiPalettes() {
+  console.log('Inicializando paletas de emojis');
+  
+  // Paleta de adicionar categoria
+  const addPalette = document.getElementById('input-category-icon');
+  if (addPalette) {
+    const emojiButtons = addPalette.querySelectorAll('.emoji-btn');
+    emojiButtons.forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        selectEmoji(this, 'input-category-icon-value');
+      });
+    });
+    // Selecionar o primeiro emoji por padrão
+    if (emojiButtons.length > 0) {
+      emojiButtons[0].classList.add('selected');
+    }
+  }
+  
+  // Paleta de editar categoria
+  const editPalette = document.getElementById('edit-category-icon');
+  if (editPalette) {
+    const emojiButtons = editPalette.querySelectorAll('.emoji-btn');
+    emojiButtons.forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        selectEmoji(this, 'edit-category-icon-value');
+      });
+    });
+  }
+}
+
+// Função para selecionar emoji na paleta
+function selectEmoji(button, inputId) {
+  console.log('Emoji selecionado:', button.dataset.emoji);
+  
+  // Remover seleção anterior
+  const palette = button.parentElement;
+  palette.querySelectorAll('.emoji-btn').forEach(btn => {
+    btn.classList.remove('selected');
+  });
+  
+  // Adicionar seleção ao botão clicado
+  button.classList.add('selected');
+  
+  // Atualizar valor do input hidden
+  document.getElementById(inputId).value = button.dataset.emoji;
+}
+
+// Função para reabrir modal de edição com emoji selecionado
+function openEditModal(categoryId, categoryName, categoryIcon) {
+  console.log('Abrindo modal de edição com emoji:', categoryIcon);
+  
+  // Preencher dados
+  document.getElementById('edit-category-id').value = categoryId;
+  document.getElementById('edit-category-name').value = categoryName;
+  document.getElementById('edit-category-icon-value').value = categoryIcon;
+  
+  // Selecionar emoji na paleta
+  const editPalette = document.getElementById('edit-category-icon');
+  const emojiButtons = editPalette.querySelectorAll('.emoji-btn');
+  emojiButtons.forEach(btn => {
+    btn.classList.remove('selected');
+    if (btn.dataset.emoji === categoryIcon) {
+      btn.classList.add('selected');
+    }
+  });
+  
+  openModal('modal-edit-category');
+}
+
+// Envio do formulário de adicionar categoria
+async function saveCategory() {
+  console.log('Função saveCategory chamada');
+  
+  const name = document.getElementById('input-category-name').value.trim();
+  const icon = document.getElementById('input-category-icon-value').value || '🎯';
+
+  console.log('Nome:', name);
+  console.log('Ícone:', icon);
+
+  if (!name) {
+    showToast('⚠️ Por favor, preencha o nome da categoria');
+    return;
+  }
+
+  try {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    console.log('CSRF Token encontrado:', csrfToken);
+    
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('icon', icon);
+    formData.append('csrfmiddlewaretoken', csrfToken);
+
+    console.log('Dados do FormData:');
+    for (let [key, value] of formData.entries()) {
+      console.log(key, ':', value);
+    }
+
+    console.log('Enviando requisição para: /orcamento/add-category/');
+    
+    const response = await fetch('/orcamento/add-category/', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRFToken': csrfToken,
+      },
+    });
+
+    console.log('Status da resposta:', response.status);
+    
+    const data = await response.json();
+    console.log('Dados da resposta:', data);
+
+    if (data.success) {
+      console.log('Sucesso! Fechando modal e recarregando página...');
+      closeModal('modal-add-category');
+      document.getElementById('input-category-name').value = '';
+      document.getElementById('input-category-icon-value').value = '🎯';
+      showToast('✅ Categoria criada com sucesso!');
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      const errorMsg = data.errors?.name?.[0] || data.errors?.icon?.[0] || 'Erro desconhecido';
+      showToast('❌ Erro ao adicionar categoria: ' + errorMsg);
+    }
+  } catch (error) {
+    console.error('Erro na requisição:', error);
+    showToast('❌ Erro na comunicação com o servidor');
+  }
+}
+
+// Função para abrir modal de edição de categoria
+function editCategory(categoryId, categoryName, categoryIcon) {
+  console.log('Abrindo modal de edição para categoria:', categoryId, categoryName, categoryIcon);
+  openEditModal(categoryId, categoryName, categoryIcon);
+}
+
+// Função para atualizar categoria
+async function updateCategory() {
+  console.log('Função updateCategory chamada');
+  
+  const categoryId = document.getElementById('edit-category-id').value;
+  const name = document.getElementById('edit-category-name').value.trim();
+  const icon = document.getElementById('edit-category-icon-value').value || '🎯';
+
+  console.log('ID:', categoryId, 'Nome:', name, 'Ícone:', icon);
+
+  if (!name) {
+    showToast('⚠️ Por favor, preencha o nome da categoria');
+    return;
+  }
+
+  try {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    const formData = new FormData();
+    formData.append('category_id', categoryId);
+    formData.append('name', name);
+    formData.append('icon', icon);
+    formData.append('csrfmiddlewaretoken', csrfToken);
+
+    console.log('Enviando requisição para: /orcamento/edit-category/');
+    
+    const response = await fetch('/orcamento/edit-category/', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRFToken': csrfToken,
+      },
+    });
+
+    console.log('Status da resposta:', response.status);
+    
+    const data = await response.json();
+    console.log('Dados da resposta:', data);
+
+    if (data.success) {
+      console.log('Sucesso! Fechando modal e recarregando página...');
+      closeModal('modal-edit-category');
+      showToast('✅ Categoria atualizada com sucesso!');
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      const errorMsg = data.errors?.name?.[0] || data.errors?.icon?.[0] || data.error || 'Erro desconhecido';
+      showToast('❌ Erro ao atualizar categoria: ' + errorMsg);
+    }
+  } catch (error) {
+    console.error('Erro na requisição:', error);
+    showToast('❌ Erro na comunicação com o servidor');
+  }
+}
+
+// Função para abrir modal de confirmação de exclusão
+function deleteCategory(categoryId, categoryName) {
+  console.log('Abrindo modal de exclusão para categoria:', categoryId, categoryName);
+  
+  document.getElementById('delete-category-id').value = categoryId;
+  document.getElementById('delete-category-name').textContent = categoryName;
+  
+  openModal('modal-delete-category');
+}
+
+// Função para confirmar exclusão de categoria
+async function confirmDeleteCategory() {
+  console.log('Função confirmDeleteCategory chamada');
+  
+  const categoryId = document.getElementById('delete-category-id').value;
+
+  try {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    const formData = new FormData();
+    formData.append('category_id', categoryId);
+    formData.append('csrfmiddlewaretoken', csrfToken);
+
+    console.log('Enviando requisição para: /orcamento/delete-category/');
+    
+    const response = await fetch('/orcamento/delete-category/', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRFToken': csrfToken,
+      },
+    });
+
+    console.log('Status da resposta:', response.status);
+    
+    const data = await response.json();
+    console.log('Dados da resposta:', data);
+
+    if (data.success) {
+      console.log('Sucesso! Fechando modal e recarregando página...');
+      closeModal('modal-delete-category');
+      showToast('✅ ' + data.message);
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      showToast('❌ Erro ao excluir categoria: ' + data.error);
+    }
+  } catch (error) {
+    console.error('Erro na requisição:', error);
+    showToast('❌ Erro na comunicação com o servidor');
+  }
 }
 
 
@@ -193,17 +833,17 @@ function initBarDashChart() {
   canvas._chartInst = new Chart(canvas, {
     type: 'bar',
     data: {
-      labels: ['Out/24', 'Nov/24', 'Dez/24', 'Jan/25', 'Fev/25', 'Mar/25'],
+      labels: barLabels,
       datasets: [
         {
           label: 'Receitas',
-          data: [1450, 1650, 2100, 1450, 1850, 1850],
+          data: barIncome,
           backgroundColor: 'rgba(63, 185, 80, 0.7)',
           borderRadius: 4,
         },
         {
           label: 'Despesas',
-          data: [1520, 1400, 1890, 1230, 1046, 1003],
+          data: barExpenses,
           backgroundColor: 'rgba(248, 81, 73, 0.6)',
           borderRadius: 4,
         },
@@ -251,10 +891,10 @@ function initDoughnutDashChart() {
   canvas._chartInst = new Chart(canvas, {
     type: 'doughnut',
     data: {
-      labels: ['Moradia', 'Alimentação', 'Lazer', 'Educação', 'Transporte', 'Outros'],
+      labels: doughnutLabels,
       datasets: [
         {
-          data: [300, 280, 190, 89, 75, 69],
+          data: doughnutData,
           backgroundColor: [
             '#58a6ff',  /* Moradia      – azul   */
             '#d29922',  /* Alimentação  – amarelo */
@@ -298,22 +938,24 @@ function initOrcChart() {
   const canvas = document.getElementById('chartOrcamento');
   if (!canvas) return;
 
-  // Destrói instância anterior se existir
   if (canvas._chartInst) canvas._chartInst.destroy();
+
+  const labels = typeof orcamento_labels !== 'undefined' ? orcamento_labels : ['Moradia', 'Alimentação', 'Lazer', 'Educação', 'Transporte'];
+  const data = typeof orcamento_values !== 'undefined' ? orcamento_values : [600, 350, 200, 200, 150];
 
   canvas._chartInst = new Chart(canvas, {
     type: 'doughnut',
     data: {
-      labels: ['Moradia', 'Alimentação', 'Lazer', 'Educação', 'Transporte'],
+      labels: labels,
       datasets: [
         {
-          data: [600, 350, 200, 200, 150],
+          data: data,
           backgroundColor: [
-            '#58a6ff',  /* Moradia      */
-            '#d29922',  /* Alimentação  */
-            '#f85149',  /* Lazer        */
-            '#3fb950',  /* Educação     */
-            '#e3b341',  /* Transporte   */
+            '#58a6ff',
+            '#d29922',
+            '#f85149',
+            '#3fb950',
+            '#e3b341',
           ],
           borderWidth: 0,
           hoverOffset: 4,
@@ -351,14 +993,19 @@ function initLineChart() {
 
   if (canvas._chartInst) canvas._chartInst.destroy();
 
+  const labels = typeof line_labels !== 'undefined' ? line_labels : ['Out/24', 'Nov/24', 'Dez/24', 'Jan/25', 'Fev/25', 'Mar/25'];
+  const income = typeof line_income !== 'undefined' ? line_income : [1450, 1650, 2100, 1450, 1850, 1850];
+  const expense = typeof line_expense !== 'undefined' ? line_expense : [1520, 1400, 1890, 1230, 1046, 1003];
+  const balance = typeof line_balance !== 'undefined' ? line_balance : [-70, 250, 210, 220, 804, 847];
+
   canvas._chartInst = new Chart(canvas, {
     type: 'line',
     data: {
-      labels: ['Out/24', 'Nov/24', 'Dez/24', 'Jan/25', 'Fev/25', 'Mar/25'],
+      labels: labels,
       datasets: [
         {
           label: 'Receitas',
-          data: [1450, 1650, 2100, 1450, 1850, 1850],
+          data: income,
           borderColor:     '#3fb950',
           backgroundColor: 'rgba(63, 185, 80, 0.1)',
           tension:     0.4,
@@ -367,7 +1014,7 @@ function initLineChart() {
         },
         {
           label: 'Despesas',
-          data: [1520, 1400, 1890, 1230, 1046, 1003],
+          data: expense,
           borderColor:     '#f85149',
           backgroundColor: 'rgba(248, 81, 73, 0.1)',
           tension:     0.4,
@@ -376,7 +1023,7 @@ function initLineChart() {
         },
         {
           label: 'Saldo',
-          data: [-70, 250, 210, 220, 804, 847],
+          data: balance,
           borderColor:     '#58a6ff',
           backgroundColor: 'rgba(88, 166, 255, 0.05)',
           tension:      0.4,
@@ -461,6 +1108,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const mes = String(agora.getMonth() + 1).padStart(2, '0');
     inputPrazo.value = ano + '-' + mes;
   }
+
+  // Função para toggle das metas concluídas
+  window.toggleMetasConcluidas = function() {
+    const section = document.getElementById('metas-concluidas-section');
+    if (section.style.display === 'none') {
+      section.style.display = 'block';
+    } else {
+      section.style.display = 'none';
+    }
+  };
 
   // Inicializa gráficos de acordo com a página atual
   if (document.getElementById('chartBarDash'))  { initBarDashChart();     }

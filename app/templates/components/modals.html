@@ -7,50 +7,114 @@
     </div>
 
     <div class="modal-body">
-
-      <!-- Seleção de tipo (Despesa / Receita) -->
-      <div class="form-group">
-        <label class="form-label">Tipo</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <button id="btn-despesa" class="btn btn-danger"    style="justify-content:center;padding:10px" onclick="setTipo('despesa')">↓ Despesa</button>
-          <button id="btn-receita" class="btn btn-secondary" style="justify-content:center;padding:10px" onclick="setTipo('receita')">↑ Receita</button>
-        </div>
+      <p>Escolha o tipo de lançamento para cadastrar:</p>
+      <div class="form-row" style="gap:12px; margin-top:18px;">
+        <button class="btn btn-danger" style="width:100%;padding:16px" onclick="openTransactionForm('expense')">↓ Nova Despesa</button>
+        <button class="btn btn-primary" style="width:100%;padding:16px" onclick="openTransactionForm('income')">↑ Nova Receita</button>
       </div>
+    </div>
 
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-add-expense">
+  <div class="modal">
+
+    <div class="modal-header">
+      <div class="modal-title">Nova Despesa</div>
+      <button class="modal-close" onclick="closeModal('modal-add-expense')">✕</button>
+    </div>
+
+    <div class="modal-body">
       <div class="form-group">
-        <label class="form-label">Descrição</label>
-        <input class="form-input" type="text" placeholder="Ex: iFood, Bolsa PIBIC..." />
+        <label class="form-label">Descrição da Despesa</label>
+        <input class="form-input" id="input-description-expense" type="text" placeholder="Ex: Aluguel, Conta de luz, Supermercado..." />
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Valor (R$)</label>
-          <input class="form-input mono" type="number" placeholder="0,00" />
+          <input class="form-input mono" id="input-amount-expense" type="number" step="0.01" placeholder="0,00" />
         </div>
         <div class="form-group">
           <label class="form-label">Data</label>
-          <input class="form-input" type="date" id="input-data" />
+          <input class="form-input" type="date" id="input-date-expense" />
         </div>
       </div>
 
       <div class="form-group">
-        <label class="form-label">Categoria</label>
-        <select class="form-select">
-          <option>🍔 Alimentação</option>
-          <option>🚌 Transporte</option>
-          <option>📚 Educação</option>
-          <option>🎮 Lazer</option>
-          <option>🏠 Moradia</option>
-          <option>💰 Bolsa/Estágio</option>
-          <option>🔧 Outros</option>
+        <label class="form-label">Categoria de Despesa</label>
+        <select class="form-select" id="input-category-expense">
+          {% if categories.exists %}
+            {% for category in categories %}
+            <option value="{{ category.id }}">{{ category.icon }} {{ category.name }}</option>
+            {% endfor %}
+          {% else %}
+            <option disabled>Nenhuma categoria disponível</option>
+          {% endif %}
         </select>
       </div>
 
+      <div class="form-group">
+        <label class="form-label">Forma de Pagamento</label>
+        <select class="form-select" id="input-payment-method">
+          <option value="Dinheiro">Dinheiro</option>
+          <option value="Cartão de Débito">Cartão de Débito</option>
+          <option value="Cartão de Crédito">Cartão de Crédito</option>
+          <option value="PIX">PIX</option>
+          <option value="Outros">Outros</option>
+        </select>
+      </div>
     </div>
 
     <div class="modal-footer">
-      <button class="btn btn-secondary" onclick="closeModal('modal-add')">Cancelar</button>
-      <button class="btn btn-primary"   onclick="saveTransaction()">Salvar Lançamento</button>
+      <button class="btn btn-secondary" onclick="closeModal('modal-add-expense')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveTransaction('expense')">Salvar Despesa</button>
+    </div>
+
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-add-income">
+  <div class="modal">
+
+    <div class="modal-header">
+      <div class="modal-title">Nova Receita</div>
+      <button class="modal-close" onclick="closeModal('modal-add-income')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Descrição da Receita</label>
+        <input class="form-input" id="input-description-income" type="text" placeholder="Ex: Salário, Bolsa, Venda, Reembolso..." />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Valor (R$)</label>
+          <input class="form-input mono" id="input-amount-income" type="number" step="0.01" placeholder="0,00" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Data</label>
+          <input class="form-input" type="date" id="input-date-income" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Fonte de Receita</label>
+        <select class="form-select" id="input-income-source">
+          <option value="Salário">Salário</option>
+          <option value="Bolsa">Bolsa</option>
+          <option value="Venda">Venda</option>
+          <option value="Reembolso">Reembolso</option>
+          <option value="Outros">Outros</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-add-income')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveTransaction('income')">Salvar Receita</button>
     </div>
 
   </div>
@@ -69,13 +133,13 @@
 
       <div class="form-group">
         <label class="form-label">Nome da Meta</label>
-        <input class="form-input" type="text" placeholder="Ex: Viagem de formatura, Notebook..." />
+        <input class="form-input" id="input-meta-name" type="text" placeholder="Ex: Viagem de formatura, Notebook..." />
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Valor Alvo (R$)</label>
-          <input class="form-input mono" type="number" placeholder="0,00" />
+          <input class="form-input mono" id="input-meta-target" type="number" step="0.01" placeholder="0,00" />
         </div>
         <div class="form-group">
           <label class="form-label">Prazo</label>
@@ -85,13 +149,13 @@
 
       <div class="form-group">
         <label class="form-label">Ícone / Categoria</label>
-        <select class="form-select">
-          <option>🏖️ Viagem</option>
-          <option>🖥️ Equipamento</option>
-          <option>🛡️ Reserva de Emergência</option>
-          <option>📚 Educação</option>
-          <option>🏠 Moradia</option>
-          <option>🎉 Outros</option>
+        <select class="form-select" id="input-meta-icon">
+          <option value="🏖️">🏖️ Viagem</option>
+          <option value="🖥️">🖥️ Equipamento</option>
+          <option value="🛡️">🛡️ Reserva de Emergência</option>
+          <option value="📚">📚 Educação</option>
+          <option value="🏠">🏠 Moradia</option>
+          <option value="🎉">🎉 Outros</option>
         </select>
       </div>
 
@@ -105,6 +169,168 @@
   </div>
 </div>
 
+<!-- 4.2.1 Modal: Editar Meta -->
+<div class="modal-overlay" id="modal-edit-meta">
+  <div class="modal">
+
+    <div class="modal-header">
+      <div class="modal-title">Editar Meta Financeira</div>
+      <button class="modal-close" onclick="closeModal('modal-edit-meta')">✕</button>
+    </div>
+
+    <div class="modal-body">
+
+      <input type="hidden" id="edit-meta-id">
+
+      <div class="form-group">
+        <label class="form-label">Nome da Meta</label>
+        <input class="form-input" id="edit-meta-name" type="text" placeholder="Ex: Viagem de formatura, Notebook..." />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Valor Alvo (R$)</label>
+          <input class="form-input mono" id="edit-meta-target" type="number" step="0.01" placeholder="0,00" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prazo</label>
+          <input class="form-input" type="month" id="edit-meta-prazo" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Ícone / Categoria</label>
+        <select class="form-select" id="edit-meta-icon">
+          <option value="🏖️">🏖️ Viagem</option>
+          <option value="🖥️">🖥️ Equipamento</option>
+          <option value="🛡️">🛡️ Reserva de Emergência</option>
+          <option value="📚">📚 Educação</option>
+          <option value="🏠">🏠 Moradia</option>
+          <option value="🎉">🎉 Outros</option>
+        </select>
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-edit-meta')">Cancelar</button>
+      <button class="btn btn-primary"   onclick="updateMeta()">Salvar Alterações</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- 4.2.2 Modal: Confirmar Exclusão de Meta -->
+<div class="modal-overlay" id="modal-delete-meta">
+  <div class="modal">
+
+    <div class="modal-header">
+      <div class="modal-title">Excluir Meta</div>
+      <button class="modal-close" onclick="closeModal('modal-delete-meta')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <input type="hidden" id="delete-meta-id">
+      <p>Tem certeza que deseja excluir a meta "<span id="delete-meta-name"></span>"?</p>
+      <p style="color: var(--danger); font-size: 14px;">Esta ação não pode ser desfeita e todos os depósitos associados serão removidos.</p>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-delete-meta')">Cancelar</button>
+      <button class="btn btn-danger"   onclick="confirmDeleteMeta()">Excluir Meta</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- 4.3 Modal: Depositar na Meta -->
+<div class="modal-overlay" id="modal-deposit">
+  <div class="modal">
+
+    <div class="modal-header">
+      <div class="modal-title">Depositar na Meta</div>
+      <button class="modal-close" onclick="closeModal('modal-deposit')">✕</button>
+    </div>
+
+    <div class="modal-body">
+
+      <div class="form-group">
+        <label class="form-label">Valor do Depósito (R$)</label>
+        <input class="form-input mono" id="input-deposit-amount" type="number" step="0.01" placeholder="0,00" />
+      </div>
+
+      <input type="hidden" id="input-deposit-goal-id" value="">
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-deposit')">Cancelar</button>
+      <button class="btn btn-primary"   onclick="saveDeposit()">Depositar</button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- 4.3.1 Modal: Editar Depósito -->
+<div class="modal-overlay" id="modal-edit-deposit">
+  <div class="modal">
+
+    <div class="modal-header">
+      <div class="modal-title">Editar Depósito</div>
+      <button class="modal-close" onclick="closeModal('modal-edit-deposit')">✕</button>
+    </div>
+
+    <div class="modal-body">
+
+      <input type="hidden" id="edit-deposit-id">
+      <input type="hidden" id="edit-deposit-goal-id">
+
+      <div class="form-group">
+        <label class="form-label">Valor do Depósito (R$)</label>
+        <input class="form-input mono" id="edit-deposit-amount" type="number" step="0.01" placeholder="0,00" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Data do Depósito</label>
+        <input class="form-input" type="date" id="edit-deposit-date" />
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-edit-deposit')">Cancelar</button>
+      <button class="btn btn-primary"   onclick="updateDeposit()">Salvar Alterações</button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- 4.4 Modal: Excluir Depósito -->
+<div class="modal-overlay" id="modal-delete-deposit">
+  <div class="modal">
+
+    <div class="modal-header">
+      <div class="modal-title">Excluir Depósito</div>
+      <button class="modal-close" onclick="closeModal('modal-delete-deposit')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <p>Tem certeza que deseja excluir este depósito?</p>
+      <p id="delete-deposit-info" style="font-weight: bold; margin-top: 10px;"></p>
+      <p style="color: var(--text3); font-size: 14px; margin-top: 10px;">Esta ação não pode ser desfeita. O valor será revertido do progresso da meta.</p>
+      <input type="hidden" id="delete-deposit-id">
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-delete-deposit')">Cancelar</button>
+      <button class="btn btn-danger" onclick="deleteDeposit()">Excluir Depósito</button>
+    </div>
+
+  </div>
+</div>
+
 
 <!-- ============================================================
      5. TOAST – Notificação flutuante
@@ -113,4 +339,141 @@
 <div class="toast" id="toast">
   <span class="toast-icon" id="toast-icon">✓</span>
   <span id="toast-msg">Operação realizada!</span>
+</div>
+
+<!-- ============================================================
+     6. MODAL: Nova Categoria
+     ============================================================ -->
+
+<div class="modal-overlay" id="modal-add-category">
+  <div class="modal">
+
+    <div class="modal-header">
+      <div class="modal-title">Nova Categoria</div>
+      <button class="modal-close" onclick="closeModal('modal-add-category')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nome da Categoria</label>
+        <input class="form-input" id="input-category-name" type="text" placeholder="Ex: Saúde, Vestuário, Presentes..." maxlength="100" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Ícone / Emoji</label>
+        <div class="emoji-palette" id="input-category-icon">
+          <button type="button" class="emoji-btn" data-emoji="🎯" title="Genérico">🎯</button>
+          <button type="button" class="emoji-btn" data-emoji="💰" title="Dinheiro">💰</button>
+          <button type="button" class="emoji-btn" data-emoji="🛍️" title="Compras">🛍️</button>
+          <button type="button" class="emoji-btn" data-emoji="⚕️" title="Saúde">⚕️</button>
+          <button type="button" class="emoji-btn" data-emoji="👔" title="Vestuário">👔</button>
+          <button type="button" class="emoji-btn" data-emoji="🎁" title="Presentes">🎁</button>
+          <button type="button" class="emoji-btn" data-emoji="🎬" title="Entretenimento">🎬</button>
+          <button type="button" class="emoji-btn" data-emoji="✈️" title="Viagem">✈️</button>
+          <button type="button" class="emoji-btn" data-emoji="📱" title="Tecnologia">📱</button>
+          <button type="button" class="emoji-btn" data-emoji="💇" title="Beleza">💇</button>
+          <button type="button" class="emoji-btn" data-emoji="🚗" title="Manutenção">🚗</button>
+          <button type="button" class="emoji-btn" data-emoji="🍽️" title="Restaurante">🍽️</button>
+          <button type="button" class="emoji-btn" data-emoji="🏥" title="Hospital">🏥</button>
+          <button type="button" class="emoji-btn" data-emoji="🚗" title="Uber">🚕</button>
+          <button type="button" class="emoji-btn" data-emoji="⚡" title="Energia">⚡</button>
+          <button type="button" class="emoji-btn" data-emoji="🏠" title="Casa">🏠</button>
+          <button type="button" class="emoji-btn" data-emoji="📚" title="Educação">📚</button>
+          <button type="button" class="emoji-btn" data-emoji="⚽" title="Esportes">⚽</button>
+          <button type="button" class="emoji-btn" data-emoji="🎮" title="Jogos">🎮</button>
+          <button type="button" class="emoji-btn" data-emoji="🍕" title="Comida">🍕</button>
+        </div>
+        <input type="hidden" id="input-category-icon-value" value="🎯" />
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-add-category')">Cancelar</button>
+      <button class="btn btn-primary" id="btn-save-category">Criar Categoria</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================
+     7. MODAL: Editar Categoria
+     ============================================================ -->
+
+<div class="modal-overlay" id="modal-edit-category">
+  <div class="modal">
+
+    <div class="modal-header">
+      <div class="modal-title">Editar Categoria</div>
+      <button class="modal-close" onclick="closeModal('modal-edit-category')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <input type="hidden" id="edit-category-id" />
+      <div class="form-group">
+        <label class="form-label">Nome da Categoria</label>
+        <input class="form-input" id="edit-category-name" type="text" placeholder="Ex: Saúde, Vestuário, Presentes..." maxlength="100" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Ícone / Emoji</label>
+        <div class="emoji-palette" id="edit-category-icon">
+          <button type="button" class="emoji-btn" data-emoji="🎯" title="Genérico">🎯</button>
+          <button type="button" class="emoji-btn" data-emoji="💰" title="Dinheiro">💰</button>
+          <button type="button" class="emoji-btn" data-emoji="🛍️" title="Compras">🛍️</button>
+          <button type="button" class="emoji-btn" data-emoji="⚕️" title="Saúde">⚕️</button>
+          <button type="button" class="emoji-btn" data-emoji="👔" title="Vestuário">👔</button>
+          <button type="button" class="emoji-btn" data-emoji="🎁" title="Presentes">🎁</button>
+          <button type="button" class="emoji-btn" data-emoji="🎬" title="Entretenimento">🎬</button>
+          <button type="button" class="emoji-btn" data-emoji="✈️" title="Viagem">✈️</button>
+          <button type="button" class="emoji-btn" data-emoji="📱" title="Tecnologia">📱</button>
+          <button type="button" class="emoji-btn" data-emoji="💇" title="Beleza">💇</button>
+          <button type="button" class="emoji-btn" data-emoji="🚗" title="Manutenção">🚗</button>
+          <button type="button" class="emoji-btn" data-emoji="🍽️" title="Restaurante">🍽️</button>
+          <button type="button" class="emoji-btn" data-emoji="🏥" title="Hospital">🏥</button>
+          <button type="button" class="emoji-btn" data-emoji="🚕" title="Uber">🚕</button>
+          <button type="button" class="emoji-btn" data-emoji="⚡" title="Energia">⚡</button>
+          <button type="button" class="emoji-btn" data-emoji="🏠" title="Casa">🏠</button>
+          <button type="button" class="emoji-btn" data-emoji="📚" title="Educação">📚</button>
+          <button type="button" class="emoji-btn" data-emoji="⚽" title="Esportes">⚽</button>
+          <button type="button" class="emoji-btn" data-emoji="🎮" title="Jogos">🎮</button>
+          <button type="button" class="emoji-btn" data-emoji="🍕" title="Comida">🍕</button>
+        </div>
+        <input type="hidden" id="edit-category-icon-value" value="🎯" />
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-edit-category')">Cancelar</button>
+      <button class="btn btn-primary" id="btn-update-category">Salvar Alterações</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================
+     8. MODAL: Confirmar Exclusão de Categoria
+     ============================================================ -->
+
+<div class="modal-overlay" id="modal-delete-category">
+  <div class="modal">
+
+    <div class="modal-header">
+      <div class="modal-title">Excluir Categoria</div>
+      <button class="modal-close" onclick="closeModal('modal-delete-category')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <input type="hidden" id="delete-category-id" />
+      <p>Tem certeza que deseja excluir a categoria <strong id="delete-category-name"></strong>?</p>
+      <p style="color: var(--red); font-size: 14px; margin-top: 8px;">
+        ⚠️ <strong>Atenção:</strong> Esta ação não pode ser desfeita. Todos os lançamentos associados a esta categoria serão afetados.
+      </p>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-delete-category')">Cancelar</button>
+      <button class="btn btn-danger" id="btn-confirm-delete">Excluir Categoria</button>
+    </div>
+
+  </div>
 </div>

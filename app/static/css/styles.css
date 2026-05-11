@@ -610,6 +610,70 @@
     border-color: rgba(248, 81, 73, 0.4);
     color: var(--red);
   }
+  .btn-danger:hover { background: rgba(248, 81, 73, 0.2); }
+  
+  /* Botão outline (bordado) */
+  .btn-outline {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--text);
+  }
+  .btn-outline:hover { 
+    background: var(--bg3);
+    border-color: var(--border2);
+  }
+  
+  /* Botão outline destrutivo */
+  .btn-outline-danger {
+    background: transparent;
+    border-color: rgba(248, 81, 73, 0.3);
+    color: var(--red);
+  }
+  .btn-outline-danger:hover { 
+    background: rgba(248, 81, 73, 0.1);
+    border-color: rgba(248, 81, 73, 0.5);
+  }
+  
+  /* Botão pequeno */
+  .btn-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+  
+  /* Paleta de Emojis */
+  .emoji-palette {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    padding: 8px;
+    background: var(--bg3);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  
+  .emoji-btn {
+    background: transparent;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    font-size: 24px;
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+  }
+  
+  .emoji-btn:hover {
+    background: var(--border);
+    transform: scale(1.1);
+  }
+  
+  .emoji-btn.selected {
+    background: var(--accent);
+    border-color: var(--accent-hover);
+  }
   
   
   /* =============================================================================
@@ -628,6 +692,10 @@
   }
   
   .modal-overlay.open { display: flex; }
+  
+  .hidden {
+    display: none !important;
+  }
   
   .modal {
     background: var(--bg2);

@@ -16,19 +16,19 @@
     <div class="sidebar-section">
       <div class="sidebar-label">Principal</div>
 
-      <a href="">
+      <a href="{% url 'index' %}" class="nav-item">
         <span class="icon">⬡</span> Dashboard
       </a>
 
-      <a href="">
+      <a href="{% url 'lancamentos' %}" class="nav-item">
         <span class="icon">↕</span> Lançamentos
       </a>
 
-      <a href="">
+      <a href="{% url 'orcamento' %}" class="nav-item">
         <span class="icon">◈</span> Orçamento
       </a>
 
-      <a href="">
+      <a href="{% url 'relatorios' %}" class="nav-item">
         <span class="icon">≡</span> Relatórios
       </a>
     </div>
@@ -37,11 +37,11 @@
     <div class="sidebar-section">
       <div class="sidebar-label">Planejamento</div>
 
-      <a href="">
+      <a href="{% url 'metas' %}" class="nav-item">
         <span class="icon">◎</span> Metas Financeiras
       </a>
 
-      <a href="">
+      <a href="{% url 'alertas' %}" class="nav-item">
         <span class="icon">▲</span> Alertas
       </a>
     </div>

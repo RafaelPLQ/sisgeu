@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Alertas{% endblock %}
+
+{% block content %}
+
+<div class="page active" id="pg-alertas">
+
+      <div class="page-header">
+        <div>
+          <div class="page-title">Alertas</div>
+          <div class="page-sub">Notificações e avisos do sistema</div>
+        </div>
+        <button class="btn btn-secondary" onclick="markAlertsRead()">Marcar todos como lidos</button>
+      </div>
+
+      <div style="margin-bottom:8px;font-size:12px;color:var(--text3)">🔴 Não lidos ({{ unread_alerts.count }})</div>
+
+      {% for alert in unread_alerts %}
+      <div class="alert-item {% if alert.alert_type == 'orcamento_100' %}danger{% elif alert.alert_type == 'orcamento_80' %}warn{% else %}info{% endif %}">
+        <div class="alert-icon">{% if alert.alert_type == 'orcamento_100' %}🚨{% elif alert.alert_type == 'orcamento_80' %}⚠️{% elif alert.alert_type == 'saldo_negativo' %}💥{% else %}ℹ️{% endif %}</div>
+        <div>
+          <div class="alert-title">{{ alert.title }}</div>
+          <div class="alert-text">{{ alert.message }}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:6px;font-family:'Space Mono',monospace">{{ alert.created_at|date:'d/m/Y H:i' }}</div>
+        </div>
+      </div>
+      {% empty %}
+      <p>Nenhum alerta não lido.</p>
+      {% endfor %}
+
+      <div style="margin:20px 0 8px;font-size:12px;color:var(--text3)">✅ Lidos recentemente</div>
+
+      {% for alert in read_alerts %}
+      <div class="alert-item info" style="opacity:0.6">
+        <div class="alert-icon">💡</div>
+        <div>
+          <div class="alert-title">{{ alert.title }}</div>
+          <div class="alert-text">{{ alert.message }}</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:6px;font-family:'Space Mono',monospace">{{ alert.created_at|date:'d/m/Y H:i' }}</div>
+        </div>
+      </div>
+      {% empty %}
+      <p>Sem alertas lidos recentemente.</p>
+      {% endfor %}
+    </div><!-- /pg-alertas -->
+
+{% endblock %}

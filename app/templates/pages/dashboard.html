@@ -19,23 +19,23 @@
       <div class="cards-row">
         <div class="stat-card green">
           <div class="stat-label">Saldo Atual</div>
-          <div class="stat-value green mono">R$ 847,30</div>
-          <div class="stat-change up">↑ +R$ 120 vs. fev.</div>
+          <div class="stat-value green mono">R$ {{ current_balance|floatformat:2 }}</div>
+          <div class="stat-change up">↑ Atualizado</div>
         </div>
         <div class="stat-card green">
           <div class="stat-label">Receitas do Mês</div>
-          <div class="stat-value green mono">R$ 1.850,00</div>
-          <div class="stat-change up">↑ Bolsa + estágio</div>
+          <div class="stat-value green mono">R$ {{ monthly_income|floatformat:2 }}</div>
+          <div class="stat-change up">↑ Este mês</div>
         </div>
         <div class="stat-card red">
           <div class="stat-label">Despesas do Mês</div>
-          <div class="stat-value red mono">R$ 1.002,70</div>
-          <div class="stat-change down">↓ –R$ 43 vs. fev.</div>
+          <div class="stat-value red mono">R$ {{ monthly_expenses|floatformat:2 }}</div>
+          <div class="stat-change down">↓ Este mês</div>
         </div>
         <div class="stat-card yellow">
           <div class="stat-label">Orçamento Usado</div>
-          <div class="stat-value yellow mono">54,2%</div>
-          <div class="stat-change up">↑ 10 dias restantes</div>
+          <div class="stat-value yellow mono">{{ budget_used_percent|floatformat:1 }}%</div>
+          <div class="stat-change up">↑ Média</div>
         </div>
       </div>
 
@@ -71,54 +71,24 @@
         <div class="widget">
           <div class="widget-header">
             <span class="widget-title">Últimos Lançamentos</span>
-            <button class="widget-action" onclick="nav('lancamentos', document.querySelector('[onclick*=lancamentos]'))">Ver todos</button>
+            <button class="widget-action" onclick="window.location.href='{% url 'lancamentos' %}'">Ver todos</button>
           </div>
           <div class="widget-body" style="padding:8px 16px">
 
+            {% for transaction in recent_transactions %}
             <div class="tx-item">
-              <div class="tx-icon" style="background:rgba(248,81,73,0.15)">🍔</div>
+              <div class="tx-icon" style="background:{% if transaction.type == 'income' %}rgba(63,185,80,0.15){% else %}rgba(248,81,73,0.15){% endif %}">{{ transaction.category.icon|default:'💰' }}</div>
               <div class="tx-info">
-                <div class="tx-name">iFood – Almoço</div>
-                <div class="tx-cat">Alimentação · 09/03</div>
+                <div class="tx-name">{{ transaction.description }}</div>
+                <div class="tx-cat">{{ transaction.category.name }} · {{ transaction.date|date:'d/m' }}</div>
               </div>
-              <div class="tx-amount neg">– R$ 32,90</div>
-            </div>
-
-            <div class="tx-item">
-              <div class="tx-icon" style="background:rgba(63,185,80,0.15)">💰</div>
-              <div class="tx-info">
-                <div class="tx-name">Bolsa PIBIC</div>
-                <div class="tx-cat">Receita · 05/03</div>
+              <div class="tx-amount {% if transaction.type == 'income' %}pos{% else %}neg{% endif %}">
+                {% if transaction.type == 'income' %}+{% else %}–{% endif %} R$ {{ transaction.amount|floatformat:2 }}
               </div>
-              <div class="tx-amount pos">+ R$ 400,00</div>
             </div>
-
-            <div class="tx-item">
-              <div class="tx-icon" style="background:rgba(88,166,255,0.15)">📚</div>
-              <div class="tx-info">
-                <div class="tx-name">Livros – Livraria UCB</div>
-                <div class="tx-cat">Educação · 04/03</div>
-              </div>
-              <div class="tx-amount neg">– R$ 89,00</div>
-            </div>
-
-            <div class="tx-item">
-              <div class="tx-icon" style="background:rgba(63,185,80,0.15)">💳</div>
-              <div class="tx-info">
-                <div class="tx-name">Estágio – TechCorp</div>
-                <div class="tx-cat">Receita · 01/03</div>
-              </div>
-              <div class="tx-amount pos">+ R$ 850,00</div>
-            </div>
-
-            <div class="tx-item">
-              <div class="tx-icon" style="background:rgba(248,81,73,0.15)">🚌</div>
-              <div class="tx-info">
-                <div class="tx-name">Recarga BilheteÚnico</div>
-                <div class="tx-cat">Transporte · 01/03</div>
-              </div>
-              <div class="tx-amount neg">– R$ 75,00</div>
-            </div>
+            {% empty %}
+            <p>Nenhum lançamento recente.</p>
+            {% endfor %}
 
           </div>
         </div>
@@ -127,49 +97,23 @@
         <div class="widget">
           <div class="widget-header">
             <span class="widget-title">Status do Orçamento</span>
-            <button class="widget-action" onclick="nav('orcamento', document.querySelector('[onclick*=orcamento]'))">Gerenciar</button>
+            <button class="widget-action" onclick="window.location.href='{% url 'orcamento' %}'">Gerenciar</button>
           </div>
           <div class="widget-body">
 
+            {% for budget in budget_usage %}
             <div class="progress-item">
               <div class="progress-top">
-                <span class="progress-name">🍔 Alimentação</span>
-                <span class="progress-vals">R$ 280 / R$ 350</span>
+                <span class="progress-name">{{ budget.icon|default:'💰' }} {{ budget.category }}</span>
+                <span class="progress-vals">R$ {{ budget.spent|floatformat:2 }} / R$ {{ budget.budget|floatformat:2 }}</span>
               </div>
-              <div class="progress-bar"><div class="progress-fill yellow" style="width:80%"></div></div>
-            </div>
-
-            <div class="progress-item">
-              <div class="progress-top">
-                <span class="progress-name">🚌 Transporte</span>
-                <span class="progress-vals">R$ 75 / R$ 150</span>
+              <div class="progress-bar">
+                <div class="progress-fill {% if budget.percent < 50 %}green{% elif budget.percent < 80 %}yellow{% else %}red{% endif %}" style="width:{{ budget.percent|floatformat:0 }}%"></div>
               </div>
-              <div class="progress-bar"><div class="progress-fill green" style="width:50%"></div></div>
             </div>
-
-            <div class="progress-item">
-              <div class="progress-top">
-                <span class="progress-name">📚 Educação</span>
-                <span class="progress-vals">R$ 89 / R$ 200</span>
-              </div>
-              <div class="progress-bar"><div class="progress-fill blue" style="width:44.5%"></div></div>
-            </div>
-
-            <div class="progress-item">
-              <div class="progress-top">
-                <span class="progress-name">🎮 Lazer</span>
-                <span class="progress-vals">R$ 190 / R$ 200</span>
-              </div>
-              <div class="progress-bar"><div class="progress-fill red" style="width:95%"></div></div>
-            </div>
-
-            <div class="progress-item">
-              <div class="progress-top">
-                <span class="progress-name">🏠 Moradia</span>
-                <span class="progress-vals">R$ 300 / R$ 600</span>
-              </div>
-              <div class="progress-bar"><div class="progress-fill green" style="width:50%"></div></div>
-            </div>
+            {% empty %}
+            <p>Nenhum orçamento definido.</p>
+            {% endfor %}
 
           </div>
         </div>
@@ -178,3 +122,11 @@
     </div><!-- /pg-dashboard -->
 
 {% endblock %}
+
+<script>
+  const barLabels = {{ bar_chart_labels|safe }};
+  const barIncome = {{ bar_chart_income|safe }};
+  const barExpenses = {{ bar_chart_expenses|safe }};
+  const doughnutLabels = {{ doughnut_labels|safe }};
+  const doughnutData = {{ doughnut_data|safe }};
+</script>

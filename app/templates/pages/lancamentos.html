@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Lançamentos{% endblock %}
+
+{% block content %}
+
+<div class="page active" id="pg-lancamentos">
+
+      <div class="page-header">
+        <div>
+          <div class="page-title">Lançamentos</div>
+          <div class="page-sub">Histórico de receitas e despesas</div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('modal-add')">+ Novo Lançamento</button>
+      </div>
+
+      <div class="month-pills">
+        {% for month in months %}
+          <div class="month-pill{% if forloop.first %} active{% endif %}" onclick="selectPill(this)">{{ month }}</div>
+        {% endfor %}
+      </div>
+
+      <!-- Seção de Receitas -->
+      <div class="widget">
+        <div class="widget-header">
+          <span class="widget-title">↑ Receitas</span>
+        </div>
+        <div class="widget-body" style="padding:0">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Descrição</th>
+                <th>Fonte</th>
+                <th>Data</th>
+                <th style="text-align:right">Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for tx in income_transactions %}
+              <tr>
+                <td><strong>{{ tx.description }}</strong></td>
+                <td><span class="tag green">{{ tx.category.icon }} {{ tx.category.name }}</span></td>
+                <td class="mono" style="font-size:12px;color:var(--text3)">{{ tx.date|date:'d/m/Y' }}</td>
+                <td class="mono" style="text-align:right;color:var(--green);font-weight:700">+ R$ {{ tx.amount|floatformat:2 }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" style="text-align:center;padding:16px;color:var(--text3)">Nenhuma receita cadastrada.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Seção de Despesas -->
+      <div class="widget" style="margin-top:32px;">
+        <div class="widget-header">
+          <span class="widget-title">↓ Despesas</span>
+        </div>
+        <div class="widget-body" style="padding:0">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Descrição</th>
+                <th>Categoria</th>
+                <th>Data</th>
+                <th style="text-align:right">Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for tx in expense_transactions %}
+              <tr>
+                <td><strong>{{ tx.description }}</strong></td>
+                <td><span class="tag red">{{ tx.category.icon }} {{ tx.category.name }}</span></td>
+                <td class="mono" style="font-size:12px;color:var(--text3)">{{ tx.date|date:'d/m/Y' }}</td>
+                <td class="mono" style="text-align:right;color:var(--red);font-weight:700">– R$ {{ tx.amount|floatformat:2 }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" style="text-align:center;padding:16px;color:var(--text3)">Nenhuma despesa cadastrada.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- /pg-lancamentos -->
+
+{% endblock %}
