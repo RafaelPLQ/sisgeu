@@ -277,7 +277,8 @@ class OrcamentoView(LoginRequiredMixin, View):
             })
             total_budget += amount
             total_spent += spent
-            orc_labels.append(category.icon or category.name)
+            icon = (category.icon or '').strip()
+            orc_labels.append(f'{icon} {category.name}'.strip() if icon else category.name)
             orc_values.append(float(amount))
 
         total_available = total_budget - total_spent
