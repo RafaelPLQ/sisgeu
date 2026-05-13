@@ -12,6 +12,15 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import Alert, Budget, Category, Goal, Transaction
 from .forms import CategoryForm
 
+INCOME_SOURCE_CHOICES = frozenset({'Salário', 'Bolsa', 'Venda', 'Reembolso', 'Outros'})
+
+
+def normalize_income_source(value):
+    s = (value or '').strip()
+    if s in INCOME_SOURCE_CHOICES:
+        return s
+    return 'Outros'
+
 
 def get_month_start(date):
     return date.replace(day=1)
@@ -862,6 +871,10 @@ class AddTransactionView(LoginRequiredMixin, View):
         if not amount or not date or not description:
             return JsonResponse({'success': False, 'error': 'Campos obrigatórios ausentes.'}, status=400)
 
+        income_source = ''
+        if transaction_type == 'income':
+            income_source = normalize_income_source(data.get('extra') or data.get('income_source'))
+
         Transaction.objects.create(
             user=request.user,
             amount=Decimal(amount),
@@ -869,6 +882,7 @@ class AddTransactionView(LoginRequiredMixin, View):
             date=date,
             category=category,
             type=transaction_type,
+            income_source=income_source,
         )
         return JsonResponse({'success': True})
 
@@ -899,10 +913,13 @@ class UpdateTransactionView(LoginRequiredMixin, View):
         if tx_type not in ('income', 'expense') or tx_type != tx.type:
             return JsonResponse({'success': False, 'error': 'Tipo de lançamento inválido.'}, status=400)
 
-        try:
-            category = get_object_or_404(Category, id=int(category_id), user=request.user)
-        except (TypeError, ValueError):
-            return JsonResponse({'success': False, 'error': 'Categoria inválida.'}, status=400)
+        if tx_type == 'expense':
+            try:
+                category = get_object_or_404(Category, id=int(category_id), user=request.user)
+            except (TypeError, ValueError):
+                return JsonResponse({'success': False, 'error': 'Categoria inválida.'}, status=400)
+        else:
+            category = None
 
         try:
             amount = Decimal(str(amount_raw).strip().replace(',', '.'))
@@ -920,7 +937,11 @@ class UpdateTransactionView(LoginRequiredMixin, View):
         tx.description = description
         tx.amount = amount
         tx.date = parsed_date
-        tx.category = category
+        if tx_type == 'expense':
+            tx.category = category
+            tx.income_source = ''
+        else:
+            tx.income_source = normalize_income_source(data.get('income_source'))
         tx.save()
 
         return JsonResponse({'success': True})

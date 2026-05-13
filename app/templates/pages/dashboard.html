@@ -77,10 +77,10 @@
 
             {% for transaction in recent_transactions %}
             <div class="tx-item">
-              <div class="tx-icon" style="background:{% if transaction.type == 'income' %}rgba(63,185,80,0.15){% else %}rgba(248,81,73,0.15){% endif %}">{{ transaction.category.icon|default:'💰' }}</div>
+              <div class="tx-icon" style="background:{% if transaction.type == 'income' %}rgba(63,185,80,0.15){% else %}rgba(248,81,73,0.15){% endif %}">{% if transaction.type == 'income' and transaction.income_source %}💵{% else %}{{ transaction.category.icon|default:'💰' }}{% endif %}</div>
               <div class="tx-info">
                 <div class="tx-name">{{ transaction.description }}</div>
-                <div class="tx-cat">{{ transaction.category.name }} · {{ transaction.date|date:'d/m' }}</div>
+                <div class="tx-cat">{% if transaction.type == 'income' %}{% if transaction.income_source %}{{ transaction.income_source }}{% else %}{{ transaction.category.name }}{% endif %}{% else %}{{ transaction.category.name }}{% endif %} · {{ transaction.date|date:'d/m' }}</div>
               </div>
               <div class="tx-amount {% if transaction.type == 'income' %}pos{% else %}neg{% endif %}">
                 {% if transaction.type == 'income' %}+{% else %}–{% endif %} R$ {{ transaction.amount|floatformat:2 }}

@@ -137,8 +137,9 @@ function saveTransaction(type) {
       return;
     }
   } else {
-    // Para receitas, apenas fonte é necessária
-    if (!description || !amount || !date) {
+    // Para receitas, descrição, valor, data e fonte
+    const src = document.getElementById('input-income-source').value;
+    if (!description || !amount || !date || !src) {
       showToast('⚠️ Preencha todos os campos antes de salvar.');
       return;
     }
@@ -183,14 +184,26 @@ function saveTransaction(type) {
   });
 }
 
-function openEditTransaction(id, type, description, amount, dateStr, categoryId) {
+function openEditTransaction(id, type, description, amount, dateStr, categoryIdOrIncomeSource) {
   document.getElementById('edit-tx-id').value = id;
   document.getElementById('edit-tx-type').value = type;
   document.getElementById('edit-tx-description').value = description;
   document.getElementById('edit-tx-amount').value = amount;
   document.getElementById('edit-tx-date').value = dateStr;
+  const wrapCat = document.getElementById('edit-tx-wrap-category');
+  const wrapSrc = document.getElementById('edit-tx-wrap-income-source');
   const cat = document.getElementById('edit-tx-category');
-  if (cat) cat.value = String(categoryId);
+  const src = document.getElementById('edit-tx-income-source');
+  if (type === 'income') {
+    if (wrapCat) wrapCat.style.display = 'none';
+    if (wrapSrc) wrapSrc.style.display = 'block';
+    const v = categoryIdOrIncomeSource || 'Outros';
+    if (src) src.value = v;
+  } else {
+    if (wrapCat) wrapCat.style.display = 'block';
+    if (wrapSrc) wrapSrc.style.display = 'none';
+    if (cat) cat.value = String(categoryIdOrIncomeSource);
+  }
   const title = document.getElementById('edit-tx-title');
   if (title) title.textContent = type === 'income' ? 'Editar receita' : 'Editar despesa';
   openModal('modal-edit-transaction');
@@ -202,12 +215,28 @@ function updateTransaction() {
   const description = document.getElementById('edit-tx-description').value.trim();
   const amount = document.getElementById('edit-tx-amount').value;
   const date = document.getElementById('edit-tx-date').value;
-  const category = document.getElementById('edit-tx-category').value;
   const csrf = getCSRFToken();
 
-  if (!description || !amount || !date || !category) {
+  if (!description || !amount || !date) {
     showToast('⚠️ Preencha todos os campos antes de salvar.');
     return;
+  }
+
+  const payload = { type, description, amount, date };
+  if (type === 'income') {
+    const incomeSource = document.getElementById('edit-tx-income-source').value;
+    if (!incomeSource) {
+      showToast('⚠️ Selecione a fonte de receita.');
+      return;
+    }
+    payload.income_source = incomeSource;
+  } else {
+    const category = document.getElementById('edit-tx-category').value;
+    if (!category) {
+      showToast('⚠️ Selecione uma categoria.');
+      return;
+    }
+    payload.category = category;
   }
 
   fetch(`/update-transaction/${id}/`, {
@@ -216,21 +245,15 @@ function updateTransaction() {
       'Content-Type': 'application/json',
       'X-CSRFToken': csrf,
     },
-    body: JSON.stringify({
-      type,
-      description,
-      amount,
-      date,
-      category,
-    }),
+    body: JSON.stringify(payload),
   }).then(async response => {
     if (response.ok) {
       closeModal('modal-edit-transaction');
       showToast('✅ Lançamento atualizado!');
       setTimeout(() => location.reload(), 800);
     } else {
-      const payload = await response.json().catch(() => null);
-      showToast(payload?.error || '❌ Erro ao atualizar.');
+      const payloadErr = await response.json().catch(() => null);
+      showToast(payloadErr?.error || '❌ Erro ao atualizar.');
     }
   }).catch(error => {
     console.error('updateTransaction error:', error);

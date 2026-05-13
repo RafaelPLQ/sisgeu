@@ -27,6 +27,12 @@ class Transaction(models.Model):
     date = models.DateField()
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     type = models.CharField(max_length=10, choices=TRANSACTION_TYPES)
+    income_source = models.CharField(
+        max_length=100,
+        blank=True,
+        default='',
+        help_text='Para receitas: Salário, Bolsa, etc. (independente da categoria contábil)',
+    )
 
     def __str__(self):
         return f"{self.description} - R$ {self.amount}"
