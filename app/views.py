@@ -275,11 +275,10 @@ class OrcamentoView(LoginRequiredMixin, View):
                 'percent': percent,
                 'status': 'green' if percent < 50 else 'yellow' if percent < 80 else 'red',
             })
-            if amount > 0:
-                total_budget += amount
-                total_spent += spent
-                orc_labels.append(category.icon or category.name)
-                orc_values.append(float(amount))
+            total_budget += amount
+            total_spent += spent
+            orc_labels.append(category.icon or category.name)
+            orc_values.append(float(amount))
 
         total_available = total_budget - total_spent
         used_percent = float((total_spent / total_budget) * 100) if total_budget > 0 else 0
@@ -294,7 +293,6 @@ class OrcamentoView(LoginRequiredMixin, View):
             'orcamento_labels': json.dumps(orc_labels),
             'orcamento_values': json.dumps(orc_values),
         }
-        print("Context sendo enviado:", context)
         return render(request, 'pages/orcamento.html', context)
 
     def post(self, request, *args, **kwargs):

@@ -940,8 +940,8 @@ function initOrcChart() {
 
   if (canvas._chartInst) canvas._chartInst.destroy();
 
-  const labels = typeof orcamento_labels !== 'undefined' ? orcamento_labels : ['Moradia', 'Alimentação', 'Lazer', 'Educação', 'Transporte'];
-  const data = typeof orcamento_values !== 'undefined' ? orcamento_values : [600, 350, 200, 200, 150];
+  const labels = typeof orcamento_labels !== 'undefined' ? orcamento_labels : [];
+  const data = typeof orcamento_values !== 'undefined' ? orcamento_values : [];
 
   canvas._chartInst = new Chart(canvas, {
     type: 'doughnut',
