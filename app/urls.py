@@ -20,4 +20,6 @@ urlpatterns = [
     path('alertas/', views.AlertasView.as_view(), name='alertas'),
     path('mark-alerts-read/', views.MarkAlertsReadView.as_view(), name='mark_alerts_read'),
     path('add-transaction/', views.AddTransactionView.as_view(), name='add_transaction'),
+    path('update-transaction/<int:pk>/', views.UpdateTransactionView.as_view(), name='update_transaction'),
+    path('delete-transaction/<int:pk>/', views.DeleteTransactionView.as_view(), name='delete_transaction'),
 ]

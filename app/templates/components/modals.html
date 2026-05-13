@@ -120,6 +120,80 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-edit-transaction">
+  <div class="modal">
+
+    <div class="modal-header">
+      <div class="modal-title" id="edit-tx-title">Editar lançamento</div>
+      <button class="modal-close" onclick="closeModal('modal-edit-transaction')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <input type="hidden" id="edit-tx-id" />
+      <input type="hidden" id="edit-tx-type" />
+
+      <div class="form-group">
+        <label class="form-label">Descrição</label>
+        <input class="form-input" id="edit-tx-description" type="text" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Valor (R$)</label>
+          <input class="form-input mono" id="edit-tx-amount" type="number" step="0.01" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Data</label>
+          <input class="form-input" type="date" id="edit-tx-date" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Categoria</label>
+        <select class="form-select" id="edit-tx-category">
+          {% if categories.exists %}
+            {% for category in categories %}
+            <option value="{{ category.id }}">{{ category.icon }} {{ category.name }}</option>
+            {% endfor %}
+          {% else %}
+            <option disabled>Nenhuma categoria disponível</option>
+          {% endif %}
+        </select>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-edit-transaction')">Cancelar</button>
+      <button class="btn btn-primary" onclick="updateTransaction()">Salvar alterações</button>
+    </div>
+
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-delete-transaction">
+  <div class="modal">
+
+    <div class="modal-header">
+      <div class="modal-title">Excluir lançamento</div>
+      <button class="modal-close" onclick="closeModal('modal-delete-transaction')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <input type="hidden" id="delete-tx-id" />
+      <p>Tem certeza que deseja excluir o lançamento <strong id="delete-tx-description"></strong>?</p>
+      <p style="color: var(--red); font-size: 14px; margin-top: 8px;">
+        ⚠️ <strong>Atenção:</strong> Esta ação não pode ser desfeita.
+      </p>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-delete-transaction')">Cancelar</button>
+      <button class="btn btn-danger" type="button" id="btn-confirm-delete-transaction">Excluir</button>
+    </div>
+
+  </div>
+</div>
+
 <!-- 4.2 Modal: Nova Meta -->
 <div class="modal-overlay" id="modal-meta">
   <div class="modal">

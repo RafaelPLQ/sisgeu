@@ -871,3 +871,65 @@ class AddTransactionView(LoginRequiredMixin, View):
             type=transaction_type,
         )
         return JsonResponse({'success': True})
+
+
+class UpdateTransactionView(LoginRequiredMixin, View):
+    login_url = settings.LOGIN_URL
+
+    def post(self, request, pk, *args, **kwargs):
+        tx = get_object_or_404(Transaction, id=pk, user=request.user)
+        data = {}
+        if request.content_type and request.content_type.startswith('application/json'):
+            try:
+                data = json.loads((request.body or b'{}').decode('utf-8'))
+            except ValueError:
+                return JsonResponse({'success': False, 'error': 'Payload inválido.'}, status=400)
+        else:
+            data = request.POST.dict()
+
+        description = (data.get('description') or '').strip()
+        amount_raw = data.get('amount')
+        date_str = data.get('date')
+        category_id = data.get('category')
+        tx_type = data.get('type')
+
+        if not description or amount_raw in (None, '') or not date_str:
+            return JsonResponse({'success': False, 'error': 'Campos obrigatórios ausentes.'}, status=400)
+
+        if tx_type not in ('income', 'expense') or tx_type != tx.type:
+            return JsonResponse({'success': False, 'error': 'Tipo de lançamento inválido.'}, status=400)
+
+        try:
+            category = get_object_or_404(Category, id=int(category_id), user=request.user)
+        except (TypeError, ValueError):
+            return JsonResponse({'success': False, 'error': 'Categoria inválida.'}, status=400)
+
+        try:
+            amount = Decimal(str(amount_raw).strip().replace(',', '.'))
+        except (InvalidOperation, AttributeError):
+            return JsonResponse({'success': False, 'error': 'Valor inválido.'}, status=400)
+
+        if amount <= 0:
+            return JsonResponse({'success': False, 'error': 'O valor deve ser maior que zero.'}, status=400)
+
+        try:
+            parsed_date = datetime.strptime(date_str.strip(), '%Y-%m-%d').date()
+        except ValueError:
+            return JsonResponse({'success': False, 'error': 'Data inválida.'}, status=400)
+
+        tx.description = description
+        tx.amount = amount
+        tx.date = parsed_date
+        tx.category = category
+        tx.save()
+
+        return JsonResponse({'success': True})
+
+
+class DeleteTransactionView(LoginRequiredMixin, View):
+    login_url = settings.LOGIN_URL
+
+    def post(self, request, pk, *args, **kwargs):
+        tx = get_object_or_404(Transaction, id=pk, user=request.user)
+        tx.delete()
+        return JsonResponse({'success': True})

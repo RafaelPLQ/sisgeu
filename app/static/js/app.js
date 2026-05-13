@@ -183,6 +183,92 @@ function saveTransaction(type) {
   });
 }
 
+function openEditTransaction(id, type, description, amount, dateStr, categoryId) {
+  document.getElementById('edit-tx-id').value = id;
+  document.getElementById('edit-tx-type').value = type;
+  document.getElementById('edit-tx-description').value = description;
+  document.getElementById('edit-tx-amount').value = amount;
+  document.getElementById('edit-tx-date').value = dateStr;
+  const cat = document.getElementById('edit-tx-category');
+  if (cat) cat.value = String(categoryId);
+  const title = document.getElementById('edit-tx-title');
+  if (title) title.textContent = type === 'income' ? 'Editar receita' : 'Editar despesa';
+  openModal('modal-edit-transaction');
+}
+
+function updateTransaction() {
+  const id = document.getElementById('edit-tx-id').value;
+  const type = document.getElementById('edit-tx-type').value;
+  const description = document.getElementById('edit-tx-description').value.trim();
+  const amount = document.getElementById('edit-tx-amount').value;
+  const date = document.getElementById('edit-tx-date').value;
+  const category = document.getElementById('edit-tx-category').value;
+  const csrf = getCSRFToken();
+
+  if (!description || !amount || !date || !category) {
+    showToast('⚠️ Preencha todos os campos antes de salvar.');
+    return;
+  }
+
+  fetch(`/update-transaction/${id}/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrf,
+    },
+    body: JSON.stringify({
+      type,
+      description,
+      amount,
+      date,
+      category,
+    }),
+  }).then(async response => {
+    if (response.ok) {
+      closeModal('modal-edit-transaction');
+      showToast('✅ Lançamento atualizado!');
+      setTimeout(() => location.reload(), 800);
+    } else {
+      const payload = await response.json().catch(() => null);
+      showToast(payload?.error || '❌ Erro ao atualizar.');
+    }
+  }).catch(error => {
+    console.error('updateTransaction error:', error);
+    showToast('❌ Erro de conexão.');
+  });
+}
+
+function openDeleteTransaction(id, description) {
+  document.getElementById('delete-tx-id').value = id;
+  document.getElementById('delete-tx-description').textContent = description;
+  openModal('modal-delete-transaction');
+}
+
+function confirmDeleteTransaction() {
+  const id = document.getElementById('delete-tx-id').value;
+  const csrf = getCSRFToken();
+  fetch(`/delete-transaction/${id}/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrf,
+    },
+    body: '{}',
+  }).then(async response => {
+    if (response.ok) {
+      closeModal('modal-delete-transaction');
+      showToast('✅ Lançamento excluído.');
+      setTimeout(() => location.reload(), 800);
+    } else {
+      const payload = await response.json().catch(() => null);
+      showToast(payload?.error || '❌ Erro ao excluir.');
+    }
+  }).catch(error => {
+    console.error('confirmDeleteTransaction error:', error);
+    showToast('❌ Erro de conexão.');
+  });
+}
+
 /* 4.3 Salvamento de Meta */
 
 /**
@@ -517,6 +603,11 @@ document.addEventListener('DOMContentLoaded', function() {
   if (deleteButton) {
     deleteButton.addEventListener('click', confirmDeleteCategory);
     console.log('Event listener adicionado ao botão confirmar exclusão');
+  }
+
+  const deleteTxButton = document.getElementById('btn-confirm-delete-transaction');
+  if (deleteTxButton) {
+    deleteTxButton.addEventListener('click', confirmDeleteTransaction);
   }
 });
 
