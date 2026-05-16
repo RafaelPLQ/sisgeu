@@ -39,28 +39,56 @@
         </div>
       </div>
 
-      <!-- Gráficos principais -->
-      <div class="grid3">
-        <div class="widget">
-          <div class="widget-header">
-            <span class="widget-title">Receitas × Despesas (6 meses)</span>
-          </div>
-          <div class="widget-body">
-            <div class="chart-wrap">
-              <canvas id="chartBarDash"></canvas>
-            </div>
-          </div>
+      <!-- Transações recorrentes (lançamentos automáticos) -->
+      <div class="widget section-gap">
+        <div class="widget-header">
+          <span class="widget-title">Transações recorrentes</span>
+          <button type="button" class="btn btn-primary btn-sm" onclick="openRecurringModalCreate()">+ Nova recorrência</button>
         </div>
-
-        <div class="widget">
-          <div class="widget-header">
-            <span class="widget-title">Gastos por Categoria</span>
-          </div>
-          <div class="widget-body">
-            <div class="chart-wrap">
-              <canvas id="chartDoughnut"></canvas>
-            </div>
-          </div>
+        <div class="widget-body" style="padding:0">
+          <p style="padding:12px 16px;color:var(--text3);font-size:12px;margin:0;line-height:1.5;border-bottom:1px solid var(--border)">
+            Contas fixas como aluguel, internet ou salário, com <strong>dia de vencimento</strong> (mensal ou semanal).
+            Os lançamentos são criados ao rodar o comando
+            <code style="font-size:11px">python manage.py generate_recurring_transactions</code>
+            (idealmente <strong>uma vez por dia</strong>, via agendador ou cron).
+          </p>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Descrição</th>
+                <th>Tipo</th>
+                <th>Categoria / Fonte</th>
+                <th>Frequência</th>
+                <th>Vencimento</th>
+                <th style="text-align:right">Valor</th>
+                <th>Ativa</th>
+                <th style="width:1%;white-space:nowrap;text-align:right">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in recurring_list %}
+              <tr>
+                <td><strong>{{ r.description }}</strong></td>
+                <td>{% if r.type == 'income' %}<span class="tag green">Receita</span>{% else %}<span class="tag red">Despesa</span>{% endif %}</td>
+                <td>{% if r.type == 'income' %}{% if r.income_source %}<span class="tag green">{{ r.income_source }}</span>{% else %}{{ r.category.icon }} {{ r.category.name }}{% endif %}{% else %}{{ r.category.icon }} {{ r.category.name }}{% endif %}</td>
+                <td class="mono" style="font-size:12px;color:var(--text3)">{{ r.get_frequency_display }}</td>
+                <td class="mono" style="font-size:12px;color:var(--text3)">{{ r.due_summary }}</td>
+                <td class="mono" style="text-align:right;font-weight:600{% if r.type == 'income' %};color:var(--green){% else %};color:var(--red){% endif %}">
+                  {% if r.type == 'income' %}+{% else %}–{% endif %} R$ {{ r.amount|floatformat:2 }}
+                </td>
+                <td>{% if r.is_active %}<span class="tag green">Sim</span>{% else %}<span class="tag" style="opacity:.7">Não</span>{% endif %}</td>
+                <td style="text-align:right">
+                  <div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap">
+                    <button type="button" class="btn btn-sm btn-outline" onclick="openRecurringModalEdit({{ r.id }})" title="Editar">✏️</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="openDeleteRecurring({{ r.id }}, '{{ r.description|escapejs }}')" title="Excluir">🗑️</button>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text3)">Nenhuma recorrência cadastrada. Use o botão &quot;Nova recorrência&quot; para adicionar.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -121,12 +149,6 @@
       </div><!-- /grid2 -->
     </div><!-- /pg-dashboard -->
 
-{% endblock %}
+{{ recurring_editor_data|json_script:"recurring-data" }}
 
-<script>
-  const barLabels = {{ bar_chart_labels|safe }};
-  const barIncome = {{ bar_chart_income|safe }};
-  const barExpenses = {{ bar_chart_expenses|safe }};
-  const doughnutLabels = {{ doughnut_labels|safe }};
-  const doughnutData = {{ doughnut_data|safe }};
-</script>
+{% endblock %}

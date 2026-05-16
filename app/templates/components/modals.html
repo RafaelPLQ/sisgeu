@@ -536,8 +536,134 @@
 </div>
 
 <!-- ============================================================
-     8. MODAL: Confirmar Exclusão de Categoria
+     Transações recorrentes
      ============================================================ -->
+
+<div class="modal-overlay" id="modal-recurring">
+  <div class="modal">
+
+    <div class="modal-header">
+      <div class="modal-title" id="modal-recurring-title">Nova recorrência</div>
+      <button type="button" class="modal-close" onclick="closeModal('modal-recurring')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <input type="hidden" id="input-rec-id" value="" />
+
+      <div class="form-group">
+        <label class="form-label">Descrição</label>
+        <input class="form-input" id="input-rec-description" type="text" placeholder="Ex: Aluguel, Internet, Salário" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Valor (R$)</label>
+          <input class="form-input mono" id="input-rec-amount" type="number" step="0.01" min="0.01" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo</label>
+          <select class="form-select" id="input-rec-type">
+            <option value="expense">Despesa</option>
+            <option value="income">Receita</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Categoria</label>
+        <select class="form-select" id="input-rec-category">
+          {% if categories.exists %}
+            {% for category in categories %}
+            <option value="{{ category.id }}">{{ category.icon }} {{ category.name }}</option>
+            {% endfor %}
+          {% else %}
+            <option disabled>Nenhuma categoria</option>
+          {% endif %}
+        </select>
+      </div>
+
+      <div class="form-group" id="wrap-rec-income-source" style="display:none">
+        <label class="form-label">Fonte de receita</label>
+        <select class="form-select" id="input-rec-income-source">
+          <option value="Salário">Salário</option>
+          <option value="Bolsa">Bolsa</option>
+          <option value="Venda">Venda</option>
+          <option value="Reembolso">Reembolso</option>
+          <option value="Outros">Outros</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Frequência</label>
+        <select class="form-select" id="input-rec-frequency">
+          <option value="monthly">Mensal</option>
+          <option value="weekly">Semanal</option>
+        </select>
+      </div>
+
+      <div class="form-group" id="wrap-rec-due-monthly">
+        <label class="form-label">Dia do vencimento no mês (1–31)</label>
+        <select class="form-select" id="input-rec-due-monthly">
+          {% for _ in "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" %}
+          <option value="{{ forloop.counter }}">{{ forloop.counter }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group" id="wrap-rec-due-weekly" style="display:none">
+        <label class="form-label">Dia da semana (lançamento)</label>
+        <select class="form-select" id="input-rec-due-weekly">
+          <option value="0">Segunda-feira</option>
+          <option value="1">Terça-feira</option>
+          <option value="2">Quarta-feira</option>
+          <option value="3">Quinta-feira</option>
+          <option value="4">Sexta-feira</option>
+          <option value="5">Sábado</option>
+          <option value="6">Domingo</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Início da recorrência</label>
+        <input class="form-input" type="date" id="input-rec-start" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="input-rec-active" checked />
+          Recorrência ativa
+        </label>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('modal-recurring')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="saveRecurring()">Salvar</button>
+    </div>
+
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-delete-recurring">
+  <div class="modal">
+
+    <div class="modal-header">
+      <div class="modal-title">Excluir recorrência</div>
+      <button type="button" class="modal-close" onclick="closeModal('modal-delete-recurring')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <input type="hidden" id="delete-rec-id" />
+      <p>Excluir a recorrência <strong id="delete-rec-description"></strong>? Os lançamentos já criados no histórico não serão removidos.</p>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('modal-delete-recurring')">Cancelar</button>
+      <button type="button" class="btn btn-danger" onclick="confirmDeleteRecurring()">Excluir</button>
+    </div>
+
+  </div>
+</div>
 
 <div class="modal-overlay" id="modal-delete-category">
   <div class="modal">

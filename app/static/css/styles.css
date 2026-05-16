@@ -939,6 +939,7 @@
     color: var(--text2);
     transition: all 0.15s;
     font-family: 'Space Mono', monospace;
+    appearance: none;
   }
   
   .month-pill.active {

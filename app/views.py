@@ -1,15 +1,16 @@
 import json
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from django.conf import settings
-from django.db.models import Sum
+from django.db.models import Max, Min, Q, Sum
+from django.db.models.functions import TruncMonth
 from django.http import HttpResponseNotAllowed, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views import View
 from django.contrib.auth.mixins import LoginRequiredMixin
 
-from .models import Alert, Budget, Category, Goal, Transaction
+from .models import Alert, Budget, Category, Goal, RecurringTransaction, Transaction
 from .forms import CategoryForm
 
 INCOME_SOURCE_CHOICES = frozenset({'Salário', 'Bolsa', 'Venda', 'Reembolso', 'Outros'})
@@ -22,8 +23,21 @@ def normalize_income_source(value):
     return 'Outros'
 
 
-def get_month_start(date):
-    return date.replace(day=1)
+def get_month_start(d):
+    return d.replace(day=1)
+
+
+def iter_months_inclusive(start_month, end_month):
+    """Percorre o 1º dia de cada mês de start_month até end_month (inclusive)."""
+    y, m = start_month.year, start_month.month
+    ey, em = end_month.year, end_month.month
+    while (y, m) <= (ey, em):
+        yield date(y, m, 1)
+        if m == 12:
+            m = 1
+            y += 1
+        else:
+            m += 1
 
 
 def ensure_default_categories(user):
@@ -178,35 +192,26 @@ class IndexView(LoginRequiredMixin, View):
 
         recent_transactions = Transaction.objects.filter(user=user).select_related('category').order_by('-date')[:5]
 
-        month_labels = []
-        income_data = []
-        expense_data = []
-        for offset in range(5, -1, -1):
-            month = current_month - timedelta(days=30 * offset)
-            month = month.replace(day=1)
-            month_labels.append(month.strftime('%b/%y'))
-            income_data.append(float(Transaction.objects.filter(
-                user=user,
-                type='income',
-                date__year=month.year,
-                date__month=month.month,
-            ).aggregate(total=Sum('amount'))['total'] or 0))
-            expense_data.append(float(Transaction.objects.filter(
-                user=user,
-                type='expense',
-                date__year=month.year,
-                date__month=month.month,
-            ).aggregate(total=Sum('amount'))['total'] or 0))
-
-        category_expenses = Transaction.objects.filter(
-            user=user,
-            type='expense',
-            date__year=current_month.year,
-            date__month=current_month.month,
-        ).values('category__name').annotate(total=Sum('amount')).order_by('-total')
-
-        doughnut_labels = [item['category__name'] for item in category_expenses]
-        doughnut_data = [float(item['total']) for item in category_expenses]
+        recurring_list = (
+            RecurringTransaction.objects.filter(user=user)
+            .select_related('category')
+            .order_by('description')
+        )
+        recurring_editor_data = [
+            {
+                'id': r.id,
+                'description': r.description,
+                'amount': str(r.amount),
+                'type': r.type,
+                'category_id': r.category_id,
+                'income_source': r.income_source or 'Outros',
+                'frequency': r.frequency,
+                'due_day': r.due_day,
+                'start_date': r.start_date.isoformat(),
+                'is_active': r.is_active,
+            }
+            for r in recurring_list
+        ]
 
         context = {
             'current_balance': current_balance,
@@ -216,11 +221,8 @@ class IndexView(LoginRequiredMixin, View):
             'recent_transactions': recent_transactions,
             'budget_usage': budget_usage,
             'categories': Category.objects.filter(user=user).order_by('name'),
-            'bar_chart_labels': json.dumps(month_labels),
-            'bar_chart_income': json.dumps(income_data),
-            'bar_chart_expenses': json.dumps(expense_data),
-            'doughnut_labels': json.dumps(doughnut_labels),
-            'doughnut_data': json.dumps(doughnut_data),
+            'recurring_list': recurring_list,
+            'recurring_editor_data': recurring_editor_data,
         }
         return render(request, 'pages/dashboard.html', context)
 
@@ -235,16 +237,13 @@ class LancamentosView(LoginRequiredMixin, View):
         all_transactions = Transaction.objects.filter(user=user).select_related('category').order_by('-date')
         income_transactions = all_transactions.filter(type='income')
         expense_transactions = all_transactions.filter(type='expense')
-        month_dates = all_transactions.dates('date', 'month', order='DESC')[:6]
-        months = [month.strftime('%b/%y') for month in month_dates]
-        if not months:
-            months = [timezone.localdate().strftime('%b/%y')]
+        month_dates = list(all_transactions.dates('date', 'month', order='DESC'))
 
         context = {
             'categories': Category.objects.filter(user=user).order_by('name'),
             'income_transactions': income_transactions,
             'expense_transactions': expense_transactions,
-            'months': months,
+            'filter_months': month_dates,
         }
         return render(request, 'pages/lancamentos.html', context)
 
@@ -454,46 +453,45 @@ class RelatoriosView(LoginRequiredMixin, View):
             date__month=current_month.month,
         ).values('category__name').annotate(total=Sum('amount')).order_by('-total')
 
+        bounds = Transaction.objects.filter(user=user).aggregate(
+            first=Min('date'),
+            last=Max('date'),
+        )
+        first_date = bounds['first']
+        last_date = bounds['last']
+        if first_date is None:
+            start_month = current_month
+            end_month = current_month
+        else:
+            start_month = get_month_start(first_date)
+            end_month = max(current_month, get_month_start(last_date))
+
+        month_totals = {}
+        for row in (
+            Transaction.objects.filter(user=user)
+            .annotate(m=TruncMonth('date'))
+            .values('m')
+            .annotate(
+                inc=Sum('amount', filter=Q(type='income')),
+                exp=Sum('amount', filter=Q(type='expense')),
+            )
+        ):
+            key_dt = row['m']
+            month_totals[(key_dt.year, key_dt.month)] = row
+
         months = []
         incomes = []
         expenses = []
         balances = []
-        for offset in range(5, -1, -1):
-            month = current_month - timedelta(days=30 * offset)
-            month = month.replace(day=1)
+        semestral = []
+        for month in iter_months_inclusive(start_month, end_month):
             months.append(month.strftime('%b/%y'))
-            inc = Transaction.objects.filter(
-                user=user,
-                type='income',
-                date__year=month.year,
-                date__month=month.month,
-            ).aggregate(total=Sum('amount'))['total'] or 0
-            exp = Transaction.objects.filter(
-                user=user,
-                type='expense',
-                date__year=month.year,
-                date__month=month.month,
-            ).aggregate(total=Sum('amount'))['total'] or 0
+            row = month_totals.get((month.year, month.month), {})
+            inc = row.get('inc') if row.get('inc') is not None else Decimal('0')
+            exp = row.get('exp') if row.get('exp') is not None else Decimal('0')
             incomes.append(float(inc))
             expenses.append(float(exp))
             balances.append(float(inc - exp))
-
-        semestral = []
-        for offset in range(5, -1, -1):
-            month = current_month - timedelta(days=30 * offset)
-            month = month.replace(day=1)
-            inc = Transaction.objects.filter(
-                user=user,
-                type='income',
-                date__year=month.year,
-                date__month=month.month,
-            ).aggregate(total=Sum('amount'))['total'] or 0
-            exp = Transaction.objects.filter(
-                user=user,
-                type='expense',
-                date__year=month.year,
-                date__month=month.month,
-            ).aggregate(total=Sum('amount'))['total'] or 0
             semestral.append({
                 'month': month.strftime('%b/%y'),
                 'income': inc,
@@ -953,4 +951,102 @@ class DeleteTransactionView(LoginRequiredMixin, View):
     def post(self, request, pk, *args, **kwargs):
         tx = get_object_or_404(Transaction, id=pk, user=request.user)
         tx.delete()
+        return JsonResponse({'success': True})
+
+
+class SaveRecurringView(LoginRequiredMixin, View):
+    login_url = settings.LOGIN_URL
+
+    def post(self, request, *args, **kwargs):
+        data = {}
+        if request.content_type and request.content_type.startswith('application/json'):
+            try:
+                data = json.loads((request.body or b'{}').decode('utf-8'))
+            except ValueError:
+                return JsonResponse({'success': False, 'error': 'Payload inválido.'}, status=400)
+        else:
+            data = request.POST.dict()
+
+        user = request.user
+        ensure_default_categories(user)
+
+        description = (data.get('description') or '').strip()
+        if not description:
+            return JsonResponse({'success': False, 'error': 'Descrição obrigatória.'}, status=400)
+
+        tx_type = data.get('type', 'expense')
+        if tx_type not in ('income', 'expense'):
+            return JsonResponse({'success': False, 'error': 'Tipo inválido.'}, status=400)
+
+        frequency = data.get('frequency', 'monthly')
+        if frequency not in ('monthly', 'weekly'):
+            return JsonResponse({'success': False, 'error': 'Frequência inválida.'}, status=400)
+
+        try:
+            due_day = int(data.get('due_day'))
+        except (TypeError, ValueError):
+            return JsonResponse({'success': False, 'error': 'Dia de vencimento inválido.'}, status=400)
+
+        if frequency == 'monthly' and not (1 <= due_day <= 31):
+            return JsonResponse({'success': False, 'error': 'Mensal: escolha o dia entre 1 e 31.'}, status=400)
+        if frequency == 'weekly' and not (0 <= due_day <= 6):
+            return JsonResponse(
+                {'success': False, 'error': 'Semanal: dia da semana de 0 (segunda) a 6 (domingo).'},
+                status=400,
+            )
+
+        try:
+            category = get_object_or_404(Category, id=int(data.get('category_id')), user=user)
+        except (TypeError, ValueError):
+            return JsonResponse({'success': False, 'error': 'Categoria inválida.'}, status=400)
+
+        try:
+            amount = Decimal(str(data.get('amount')).strip().replace(',', '.'))
+        except (InvalidOperation, TypeError, AttributeError):
+            return JsonResponse({'success': False, 'error': 'Valor inválido.'}, status=400)
+        if amount <= 0:
+            return JsonResponse({'success': False, 'error': 'O valor deve ser maior que zero.'}, status=400)
+
+        date_str = data.get('start_date')
+        if not date_str:
+            return JsonResponse({'success': False, 'error': 'Informe a data inicial.'}, status=400)
+        try:
+            start_date = datetime.strptime(date_str.strip(), '%Y-%m-%d').date()
+        except ValueError:
+            return JsonResponse({'success': False, 'error': 'Data inicial inválida.'}, status=400)
+
+        is_active = data.get('is_active', True)
+        if isinstance(is_active, str):
+            is_active = is_active.lower() in ('1', 'true', 'yes', 'on')
+
+        income_source = ''
+        if tx_type == 'income':
+            income_source = normalize_income_source(data.get('income_source'))
+
+        pk = data.get('id') or data.get('pk')
+        if pk:
+            rec = get_object_or_404(RecurringTransaction, id=int(pk), user=user)
+        else:
+            rec = RecurringTransaction(user=user)
+
+        rec.description = description
+        rec.amount = amount
+        rec.type = tx_type
+        rec.category = category
+        rec.income_source = income_source
+        rec.frequency = frequency
+        rec.due_day = due_day
+        rec.start_date = start_date
+        rec.is_active = bool(is_active)
+        rec.save()
+
+        return JsonResponse({'success': True, 'id': rec.id})
+
+
+class DeleteRecurringView(LoginRequiredMixin, View):
+    login_url = settings.LOGIN_URL
+
+    def post(self, request, pk, *args, **kwargs):
+        rec = get_object_or_404(RecurringTransaction, id=pk, user=request.user)
+        rec.delete()
         return JsonResponse({'success': True})

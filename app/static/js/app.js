@@ -292,6 +292,165 @@ function confirmDeleteTransaction() {
   });
 }
 
+function parseRecurringEditorData() {
+  const el = document.getElementById('recurring-data');
+  if (!el || !el.textContent) return [];
+  try {
+    return JSON.parse(el.textContent);
+  } catch (e) {
+    return [];
+  }
+}
+
+function ensureRecurringMonthlyDaySelect() {
+  const sel = document.getElementById('input-rec-due-monthly');
+  if (!sel || sel.options.length >= 31) return;
+  sel.innerHTML = '';
+  for (let d = 1; d <= 31; d++) {
+    const o = document.createElement('option');
+    o.value = String(d);
+    o.textContent = String(d);
+    sel.appendChild(o);
+  }
+}
+
+function syncRecurringDueVisibility() {
+  const freqEl = document.getElementById('input-rec-frequency');
+  const wrapM = document.getElementById('wrap-rec-due-monthly');
+  const wrapW = document.getElementById('wrap-rec-due-weekly');
+  if (!freqEl || !wrapM || !wrapW) return;
+  const freq = freqEl.value;
+  wrapM.style.display = freq === 'monthly' ? 'block' : 'none';
+  wrapW.style.display = freq === 'weekly' ? 'block' : 'none';
+}
+
+function syncRecurringTypeVisibility() {
+  const tEl = document.getElementById('input-rec-type');
+  const wrap = document.getElementById('wrap-rec-income-source');
+  if (!tEl || !wrap) return;
+  wrap.style.display = tEl.value === 'income' ? 'block' : 'none';
+}
+
+function openRecurringModalCreate() {
+  ensureRecurringMonthlyDaySelect();
+  document.getElementById('input-rec-id').value = '';
+  document.getElementById('input-rec-description').value = '';
+  document.getElementById('input-rec-amount').value = '';
+  document.getElementById('input-rec-type').value = 'expense';
+  const cat = document.getElementById('input-rec-category');
+  if (cat && cat.options.length) cat.selectedIndex = 0;
+  document.getElementById('input-rec-income-source').value = 'Outros';
+  document.getElementById('input-rec-frequency').value = 'monthly';
+  document.getElementById('input-rec-due-monthly').value = '10';
+  document.getElementById('input-rec-due-weekly').value = '0';
+  document.getElementById('input-rec-start').value = new Date().toISOString().split('T')[0];
+  document.getElementById('input-rec-active').checked = true;
+  const titleEl = document.getElementById('modal-recurring-title');
+  if (titleEl) titleEl.textContent = 'Nova recorrência';
+  syncRecurringDueVisibility();
+  syncRecurringTypeVisibility();
+  openModal('modal-recurring');
+}
+
+function openRecurringModalEdit(id) {
+  ensureRecurringMonthlyDaySelect();
+  const list = parseRecurringEditorData();
+  const r = list.find(x => x.id === id);
+  if (!r) {
+    showToast('❌ Recorrência não encontrada. Atualize a página.');
+    return;
+  }
+  document.getElementById('input-rec-id').value = String(r.id);
+  document.getElementById('input-rec-description').value = r.description;
+  document.getElementById('input-rec-amount').value = r.amount;
+  document.getElementById('input-rec-type').value = r.type;
+  document.getElementById('input-rec-category').value = String(r.category_id);
+  document.getElementById('input-rec-income-source').value = r.income_source || 'Outros';
+  document.getElementById('input-rec-frequency').value = r.frequency;
+  if (r.frequency === 'monthly') {
+    document.getElementById('input-rec-due-monthly').value = String(r.due_day);
+  } else {
+    document.getElementById('input-rec-due-weekly').value = String(r.due_day);
+  }
+  document.getElementById('input-rec-start').value = r.start_date;
+  document.getElementById('input-rec-active').checked = !!r.is_active;
+  const titleEl = document.getElementById('modal-recurring-title');
+  if (titleEl) titleEl.textContent = 'Editar recorrência';
+  syncRecurringDueVisibility();
+  syncRecurringTypeVisibility();
+  openModal('modal-recurring');
+}
+
+function currentRecurringDueDay() {
+  const freq = document.getElementById('input-rec-frequency').value;
+  if (freq === 'monthly') {
+    return parseInt(document.getElementById('input-rec-due-monthly').value, 10);
+  }
+  return parseInt(document.getElementById('input-rec-due-weekly').value, 10);
+}
+
+async function saveRecurring() {
+  const idVal = document.getElementById('input-rec-id').value.trim();
+  const payload = {
+    description: document.getElementById('input-rec-description').value.trim(),
+    amount: document.getElementById('input-rec-amount').value,
+    type: document.getElementById('input-rec-type').value,
+    category_id: parseInt(document.getElementById('input-rec-category').value, 10),
+    frequency: document.getElementById('input-rec-frequency').value,
+    due_day: currentRecurringDueDay(),
+    start_date: document.getElementById('input-rec-start').value,
+    is_active: document.getElementById('input-rec-active').checked,
+  };
+  if (idVal) payload.id = parseInt(idVal, 10);
+  if (payload.type === 'income') {
+    payload.income_source = document.getElementById('input-rec-income-source').value;
+  }
+
+  if (!payload.description || !payload.amount || !payload.start_date) {
+    showToast('⚠️ Preencha descrição, valor e data inicial.');
+    return;
+  }
+
+  const csrf = getCSRFToken();
+  const response = await fetch('/recurring/save/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (response.ok && data.success) {
+    closeModal('modal-recurring');
+    showToast('✅ Recorrência salva!');
+    setTimeout(() => location.reload(), 600);
+  } else {
+    showToast('❌ ' + (data.error || 'Erro ao salvar.'));
+  }
+}
+
+function openDeleteRecurring(id, description) {
+  document.getElementById('delete-rec-id').value = id;
+  document.getElementById('delete-rec-description').textContent = description;
+  openModal('modal-delete-recurring');
+}
+
+async function confirmDeleteRecurring() {
+  const id = document.getElementById('delete-rec-id').value;
+  const csrf = getCSRFToken();
+  const response = await fetch(`/recurring/delete/${id}/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+    body: '{}',
+  });
+  const data = await response.json().catch(() => ({}));
+  if (response.ok && data.success) {
+    closeModal('modal-delete-recurring');
+    showToast('✅ Recorrência excluída.');
+    setTimeout(() => location.reload(), 600);
+  } else {
+    showToast('❌ ' + (data.error || 'Erro ao excluir.'));
+  }
+}
+
 /* 4.3 Salvamento de Meta */
 
 /**
@@ -887,13 +1046,20 @@ async function confirmDeleteCategory() {
 /**
  * Seleciona um mês no filtro de período da tela de Lançamentos.
  * Remove o estado ativo dos demais pills e ativa o clicado.
+ * data-ym vazio = mostrar todas as linhas com classe .tx-row.
  *
  * @param {HTMLElement} el - Elemento pill clicado
  */
 function selectPill(el) {
   document.querySelectorAll('.month-pill').forEach(p => p.classList.remove('active'));
   el.classList.add('active');
-  showToast('📅 Filtrando por ' + el.textContent);
+  const ym = el.getAttribute('data-ym') || '';
+  const page = document.getElementById('pg-lancamentos');
+  if (!page) return;
+  page.querySelectorAll('tr.tx-row').forEach(row => {
+    const rowYm = row.getAttribute('data-ym') || '';
+    row.style.display = !ym || rowYm === ym ? '' : 'none';
+  });
 }
 
 
@@ -1099,7 +1265,7 @@ function initOrcChart() {
 
 /**
  * Inicializa (ou reinicializa) o gráfico de linha na tela de Relatórios,
- * exibindo a evolução de receitas, despesas e saldo nos últimos 6 meses.
+ * exibindo receitas, despesas e saldo mês a mês no período com lançamentos.
  */
 function initLineChart() {
   const canvas = document.getElementById('chartLine');
@@ -1185,10 +1351,10 @@ function initLineChart() {
  * sob demanda na função nav().
  */
 function initCharts() {
-  initBarDashChart();
-  initDoughnutDashChart();
-  initOrcChart();
-  initLineChart();
+  if (document.getElementById('chartBarDash')) initBarDashChart();
+  if (document.getElementById('chartDoughnut')) initDoughnutDashChart();
+  if (document.getElementById('chartOrcamento')) initOrcChart();
+  if (document.getElementById('chartLine')) initLineChart();
 }
 
 
@@ -1238,6 +1404,12 @@ document.addEventListener('DOMContentLoaded', function () {
   if (document.getElementById('chartDoughnut')) { initDoughnutDashChart();}
   if (document.getElementById('chartOrcamento')){ initOrcChart();         }
   if (document.getElementById('chartLine'))     { initLineChart();        }
+
+  ensureRecurringMonthlyDaySelect();
+  const recFreq = document.getElementById('input-rec-frequency');
+  if (recFreq) recFreq.addEventListener('change', syncRecurringDueVisibility);
+  const recType = document.getElementById('input-rec-type');
+  if (recType) recType.addEventListener('change', syncRecurringTypeVisibility);
 
   // Login e cadastro são tratados pelo Django (POST de formulário).
   // Não há interceptação de clique aqui.
