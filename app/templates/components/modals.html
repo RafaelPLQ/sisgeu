@@ -543,76 +543,76 @@
   <div class="modal">
 
     <div class="modal-header">
-      <div class="modal-title" id="modal-recurring-title">Nova recorrência</div>
+      <div class="modal-title">Nova Recorrência</div>
       <button type="button" class="modal-close" onclick="closeModal('modal-recurring')">✕</button>
     </div>
 
     <div class="modal-body">
-      <input type="hidden" id="input-rec-id" value="" />
+      <p>Escolha o tipo de recorrência para cadastrar:</p>
+      <div class="form-row" style="gap:12px; margin-top:18px;">
+        <button class="btn btn-danger" style="width:100%;padding:16px" onclick="openRecurringForm('expense')">↓ Nova Despesa Recorrente</button>
+        <button class="btn btn-primary" style="width:100%;padding:16px" onclick="openRecurringForm('income')">↑ Nova Receita Recorrente</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-recurring-expense">
+  <div class="modal">
+
+    <div class="modal-header">
+      <div class="modal-title" id="modal-recurring-expense-title">Nova Despesa Recorrente</div>
+      <button type="button" class="modal-close" onclick="closeModal('modal-recurring-expense')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <input type="hidden" id="input-rec-expense-id" value="" />
 
       <div class="form-group">
         <label class="form-label">Descrição</label>
-        <input class="form-input" id="input-rec-description" type="text" placeholder="Ex: Aluguel, Internet, Salário" />
+        <input class="form-input" id="input-rec-expense-description" type="text" placeholder="Ex: Aluguel, Internet, Conta de luz" />
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Valor (R$)</label>
-          <input class="form-input mono" id="input-rec-amount" type="number" step="0.01" min="0.01" />
+          <input class="form-input mono" id="input-rec-expense-amount" type="number" step="0.01" min="0.01" />
         </div>
         <div class="form-group">
-          <label class="form-label">Tipo</label>
-          <select class="form-select" id="input-rec-type">
-            <option value="expense">Despesa</option>
-            <option value="income">Receita</option>
+          <label class="form-label">Categoria</label>
+          <select class="form-select" id="input-rec-expense-category">
+            {% if categories.exists %}
+              {% for category in categories %}
+              <option value="{{ category.id }}">{{ category.icon }} {{ category.name }}</option>
+              {% endfor %}
+            {% else %}
+              <option disabled>Nenhuma categoria</option>
+            {% endif %}
           </select>
         </div>
       </div>
 
       <div class="form-group">
-        <label class="form-label">Categoria</label>
-        <select class="form-select" id="input-rec-category">
-          {% if categories.exists %}
-            {% for category in categories %}
-            <option value="{{ category.id }}">{{ category.icon }} {{ category.name }}</option>
-            {% endfor %}
-          {% else %}
-            <option disabled>Nenhuma categoria</option>
-          {% endif %}
-        </select>
-      </div>
-
-      <div class="form-group" id="wrap-rec-income-source" style="display:none">
-        <label class="form-label">Fonte de receita</label>
-        <select class="form-select" id="input-rec-income-source">
-          <option value="Salário">Salário</option>
-          <option value="Bolsa">Bolsa</option>
-          <option value="Venda">Venda</option>
-          <option value="Reembolso">Reembolso</option>
-          <option value="Outros">Outros</option>
-        </select>
-      </div>
-
-      <div class="form-group">
         <label class="form-label">Frequência</label>
-        <select class="form-select" id="input-rec-frequency">
+        <select class="form-select" id="input-rec-expense-frequency">
           <option value="monthly">Mensal</option>
           <option value="weekly">Semanal</option>
         </select>
       </div>
 
-      <div class="form-group" id="wrap-rec-due-monthly">
+      <div class="form-group" id="wrap-rec-expense-due-monthly">
         <label class="form-label">Dia do vencimento no mês (1–31)</label>
-        <select class="form-select" id="input-rec-due-monthly">
+        <select class="form-select" id="input-rec-expense-due-monthly">
           {% for _ in "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" %}
           <option value="{{ forloop.counter }}">{{ forloop.counter }}</option>
           {% endfor %}
         </select>
       </div>
 
-      <div class="form-group" id="wrap-rec-due-weekly" style="display:none">
+      <div class="form-group" id="wrap-rec-expense-due-weekly" style="display:none">
         <label class="form-label">Dia da semana (lançamento)</label>
-        <select class="form-select" id="input-rec-due-weekly">
+        <select class="form-select" id="input-rec-expense-due-weekly">
           <option value="0">Segunda-feira</option>
           <option value="1">Terça-feira</option>
           <option value="2">Quarta-feira</option>
@@ -625,20 +625,104 @@
 
       <div class="form-group">
         <label class="form-label">Início da recorrência</label>
-        <input class="form-input" type="date" id="input-rec-start" />
+        <input class="form-input" type="date" id="input-rec-expense-start" />
       </div>
 
       <div class="form-group">
         <label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer">
-          <input type="checkbox" id="input-rec-active" checked />
+          <input type="checkbox" id="input-rec-expense-active" checked />
           Recorrência ativa
         </label>
       </div>
     </div>
 
     <div class="modal-footer">
-      <button type="button" class="btn btn-secondary" onclick="closeModal('modal-recurring')">Cancelar</button>
-      <button type="button" class="btn btn-primary" onclick="saveRecurring()">Salvar</button>
+      <button type="button" class="btn btn-secondary" onclick="closeModal('modal-recurring-expense')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="saveRecurringExpense()">Salvar</button>
+    </div>
+
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-recurring-income">
+  <div class="modal">
+
+    <div class="modal-header">
+      <div class="modal-title" id="modal-recurring-income-title">Nova Receita Recorrente</div>
+      <button type="button" class="modal-close" onclick="closeModal('modal-recurring-income')">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <input type="hidden" id="input-rec-income-id" value="" />
+
+      <div class="form-group">
+        <label class="form-label">Descrição</label>
+        <input class="form-input" id="input-rec-income-description" type="text" placeholder="Ex: Salário, Bolsa, Aluguel recebido" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Valor (R$)</label>
+          <input class="form-input mono" id="input-rec-income-amount" type="number" step="0.01" min="0.01" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fonte de receita</label>
+          <select class="form-select" id="input-rec-income-source">
+            <option value="Salário">Salário</option>
+            <option value="Bolsa">Bolsa</option>
+            <option value="Venda">Venda</option>
+            <option value="Reembolso">Reembolso</option>
+            <option value="Outros">Outros</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Frequência</label>
+        <select class="form-select" id="input-rec-income-frequency">
+          <option value="monthly">Mensal</option>
+          <option value="weekly">Semanal</option>
+        </select>
+      </div>
+
+      <div class="form-group" id="wrap-rec-income-due-monthly">
+        <label class="form-label">Dia do recebimento no mês (1–31)</label>
+        <select class="form-select" id="input-rec-income-due-monthly">
+          {% for _ in "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" %}
+          <option value="{{ forloop.counter }}">{{ forloop.counter }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group" id="wrap-rec-income-due-weekly" style="display:none">
+        <label class="form-label">Dia da semana (recebimento)</label>
+        <select class="form-select" id="input-rec-income-due-weekly">
+          <option value="0">Segunda-feira</option>
+          <option value="1">Terça-feira</option>
+          <option value="2">Quarta-feira</option>
+          <option value="3">Quinta-feira</option>
+          <option value="4">Sexta-feira</option>
+          <option value="5">Sábado</option>
+          <option value="6">Domingo</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Início da recorrência</label>
+        <input class="form-input" type="date" id="input-rec-income-start" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" id="input-rec-income-active" checked />
+          Recorrência ativa
+        </label>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('modal-recurring-income')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="saveRecurringIncome()">Salvar</button>
     </div>
 
   </div>

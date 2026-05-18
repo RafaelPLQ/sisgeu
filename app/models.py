@@ -25,7 +25,7 @@ class RecurringTransaction(models.Model):
     description = models.CharField(max_length=255)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     type = models.CharField(max_length=10, choices=[('income', 'Receita'), ('expense', 'Despesa')])
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, blank=True)
     income_source = models.CharField(
         max_length=100,
         blank=True,
@@ -67,7 +67,7 @@ class Transaction(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     description = models.CharField(max_length=255)
     date = models.DateField()
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, null=True, blank=True)
     type = models.CharField(max_length=10, choices=TRANSACTION_TYPES)
     income_source = models.CharField(
         max_length=100,
@@ -164,7 +164,6 @@ class Alert(models.Model):
     alert_type = models.CharField(max_length=20, choices=ALERT_TYPES)
     title = models.CharField(max_length=150)
     message = models.TextField()
-    read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

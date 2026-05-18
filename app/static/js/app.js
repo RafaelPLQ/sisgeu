@@ -303,52 +303,87 @@ function parseRecurringEditorData() {
 }
 
 function ensureRecurringMonthlyDaySelect() {
-  const sel = document.getElementById('input-rec-due-monthly');
-  if (!sel || sel.options.length >= 31) return;
-  sel.innerHTML = '';
-  for (let d = 1; d <= 31; d++) {
-    const o = document.createElement('option');
-    o.value = String(d);
-    o.textContent = String(d);
-    sel.appendChild(o);
+  const selExpense = document.getElementById('input-rec-expense-due-monthly');
+  const selIncome = document.getElementById('input-rec-income-due-monthly');
+  
+  if (selExpense && selExpense.options.length < 31) {
+    selExpense.innerHTML = '';
+    for (let d = 1; d <= 31; d++) {
+      const o = document.createElement('option');
+      o.value = String(d);
+      o.textContent = String(d);
+      selExpense.appendChild(o);
+    }
+  }
+  
+  if (selIncome && selIncome.options.length < 31) {
+    selIncome.innerHTML = '';
+    for (let d = 1; d <= 31; d++) {
+      const o = document.createElement('option');
+      o.value = String(d);
+      o.textContent = String(d);
+      selIncome.appendChild(o);
+    }
   }
 }
 
-function syncRecurringDueVisibility() {
-  const freqEl = document.getElementById('input-rec-frequency');
-  const wrapM = document.getElementById('wrap-rec-due-monthly');
-  const wrapW = document.getElementById('wrap-rec-due-weekly');
+function syncRecurringExpenseDueVisibility() {
+  const freqEl = document.getElementById('input-rec-expense-frequency');
+  const wrapM = document.getElementById('wrap-rec-expense-due-monthly');
+  const wrapW = document.getElementById('wrap-rec-expense-due-weekly');
   if (!freqEl || !wrapM || !wrapW) return;
   const freq = freqEl.value;
   wrapM.style.display = freq === 'monthly' ? 'block' : 'none';
   wrapW.style.display = freq === 'weekly' ? 'block' : 'none';
 }
 
-function syncRecurringTypeVisibility() {
-  const tEl = document.getElementById('input-rec-type');
-  const wrap = document.getElementById('wrap-rec-income-source');
-  if (!tEl || !wrap) return;
-  wrap.style.display = tEl.value === 'income' ? 'block' : 'none';
+function syncRecurringIncomeDueVisibility() {
+  const freqEl = document.getElementById('input-rec-income-frequency');
+  const wrapM = document.getElementById('wrap-rec-income-due-monthly');
+  const wrapW = document.getElementById('wrap-rec-income-due-weekly');
+  if (!freqEl || !wrapM || !wrapW) return;
+  const freq = freqEl.value;
+  wrapM.style.display = freq === 'monthly' ? 'block' : 'none';
+  wrapW.style.display = freq === 'weekly' ? 'block' : 'none';
+}
+
+function openRecurringForm(type) {
+  closeModal('modal-recurring');
+  ensureRecurringMonthlyDaySelect();
+  
+  if (type === 'expense') {
+    document.getElementById('input-rec-expense-id').value = '';
+    document.getElementById('input-rec-expense-description').value = '';
+    document.getElementById('input-rec-expense-amount').value = '';
+    const cat = document.getElementById('input-rec-expense-category');
+    if (cat && cat.options.length) cat.selectedIndex = 0;
+    document.getElementById('input-rec-expense-frequency').value = 'monthly';
+    document.getElementById('input-rec-expense-due-monthly').value = '10';
+    document.getElementById('input-rec-expense-due-weekly').value = '0';
+    document.getElementById('input-rec-expense-start').value = new Date().toISOString().split('T')[0];
+    document.getElementById('input-rec-expense-active').checked = true;
+    const titleEl = document.getElementById('modal-recurring-expense-title');
+    if (titleEl) titleEl.textContent = 'Nova Despesa Recorrente';
+    syncRecurringExpenseDueVisibility();
+    openModal('modal-recurring-expense');
+  } else {
+    document.getElementById('input-rec-income-id').value = '';
+    document.getElementById('input-rec-income-description').value = '';
+    document.getElementById('input-rec-income-amount').value = '';
+    document.getElementById('input-rec-income-source').value = 'Outros';
+    document.getElementById('input-rec-income-frequency').value = 'monthly';
+    document.getElementById('input-rec-income-due-monthly').value = '10';
+    document.getElementById('input-rec-income-due-weekly').value = '0';
+    document.getElementById('input-rec-income-start').value = new Date().toISOString().split('T')[0];
+    document.getElementById('input-rec-income-active').checked = true;
+    const titleEl = document.getElementById('modal-recurring-income-title');
+    if (titleEl) titleEl.textContent = 'Nova Receita Recorrente';
+    syncRecurringIncomeDueVisibility();
+    openModal('modal-recurring-income');
+  }
 }
 
 function openRecurringModalCreate() {
-  ensureRecurringMonthlyDaySelect();
-  document.getElementById('input-rec-id').value = '';
-  document.getElementById('input-rec-description').value = '';
-  document.getElementById('input-rec-amount').value = '';
-  document.getElementById('input-rec-type').value = 'expense';
-  const cat = document.getElementById('input-rec-category');
-  if (cat && cat.options.length) cat.selectedIndex = 0;
-  document.getElementById('input-rec-income-source').value = 'Outros';
-  document.getElementById('input-rec-frequency').value = 'monthly';
-  document.getElementById('input-rec-due-monthly').value = '10';
-  document.getElementById('input-rec-due-weekly').value = '0';
-  document.getElementById('input-rec-start').value = new Date().toISOString().split('T')[0];
-  document.getElementById('input-rec-active').checked = true;
-  const titleEl = document.getElementById('modal-recurring-title');
-  if (titleEl) titleEl.textContent = 'Nova recorrência';
-  syncRecurringDueVisibility();
-  syncRecurringTypeVisibility();
   openModal('modal-recurring');
 }
 
@@ -360,51 +395,73 @@ function openRecurringModalEdit(id) {
     showToast('❌ Recorrência não encontrada. Atualize a página.');
     return;
   }
-  document.getElementById('input-rec-id').value = String(r.id);
-  document.getElementById('input-rec-description').value = r.description;
-  document.getElementById('input-rec-amount').value = r.amount;
-  document.getElementById('input-rec-type').value = r.type;
-  document.getElementById('input-rec-category').value = String(r.category_id);
-  document.getElementById('input-rec-income-source').value = r.income_source || 'Outros';
-  document.getElementById('input-rec-frequency').value = r.frequency;
-  if (r.frequency === 'monthly') {
-    document.getElementById('input-rec-due-monthly').value = String(r.due_day);
+  
+  if (r.type === 'expense') {
+    document.getElementById('input-rec-expense-id').value = String(r.id);
+    document.getElementById('input-rec-expense-description').value = r.description;
+    document.getElementById('input-rec-expense-amount').value = r.amount;
+    document.getElementById('input-rec-expense-category').value = String(r.category_id);
+    document.getElementById('input-rec-expense-frequency').value = r.frequency;
+    if (r.frequency === 'monthly') {
+      document.getElementById('input-rec-expense-due-monthly').value = String(r.due_day);
+    } else {
+      document.getElementById('input-rec-expense-due-weekly').value = String(r.due_day);
+    }
+    document.getElementById('input-rec-expense-start').value = r.start_date;
+    document.getElementById('input-rec-expense-active').checked = !!r.is_active;
+    const titleEl = document.getElementById('modal-recurring-expense-title');
+    if (titleEl) titleEl.textContent = 'Editar Despesa Recorrente';
+    syncRecurringExpenseDueVisibility();
+    openModal('modal-recurring-expense');
   } else {
-    document.getElementById('input-rec-due-weekly').value = String(r.due_day);
+    document.getElementById('input-rec-income-id').value = String(r.id);
+    document.getElementById('input-rec-income-description').value = r.description;
+    document.getElementById('input-rec-income-amount').value = r.amount;
+    document.getElementById('input-rec-income-source').value = r.income_source || 'Outros';
+    document.getElementById('input-rec-income-frequency').value = r.frequency;
+    if (r.frequency === 'monthly') {
+      document.getElementById('input-rec-income-due-monthly').value = String(r.due_day);
+    } else {
+      document.getElementById('input-rec-income-due-weekly').value = String(r.due_day);
+    }
+    document.getElementById('input-rec-income-start').value = r.start_date;
+    document.getElementById('input-rec-income-active').checked = !!r.is_active;
+    const titleEl = document.getElementById('modal-recurring-income-title');
+    if (titleEl) titleEl.textContent = 'Editar Receita Recorrente';
+    syncRecurringIncomeDueVisibility();
+    openModal('modal-recurring-income');
   }
-  document.getElementById('input-rec-start').value = r.start_date;
-  document.getElementById('input-rec-active').checked = !!r.is_active;
-  const titleEl = document.getElementById('modal-recurring-title');
-  if (titleEl) titleEl.textContent = 'Editar recorrência';
-  syncRecurringDueVisibility();
-  syncRecurringTypeVisibility();
-  openModal('modal-recurring');
 }
 
-function currentRecurringDueDay() {
-  const freq = document.getElementById('input-rec-frequency').value;
+function currentRecurringExpenseDueDay() {
+  const freq = document.getElementById('input-rec-expense-frequency').value;
   if (freq === 'monthly') {
-    return parseInt(document.getElementById('input-rec-due-monthly').value, 10);
+    return parseInt(document.getElementById('input-rec-expense-due-monthly').value, 10);
   }
-  return parseInt(document.getElementById('input-rec-due-weekly').value, 10);
+  return parseInt(document.getElementById('input-rec-expense-due-weekly').value, 10);
 }
 
-async function saveRecurring() {
-  const idVal = document.getElementById('input-rec-id').value.trim();
+function currentRecurringIncomeDueDay() {
+  const freq = document.getElementById('input-rec-income-frequency').value;
+  if (freq === 'monthly') {
+    return parseInt(document.getElementById('input-rec-income-due-monthly').value, 10);
+  }
+  return parseInt(document.getElementById('input-rec-income-due-weekly').value, 10);
+}
+
+async function saveRecurringExpense() {
+  const idVal = document.getElementById('input-rec-expense-id').value.trim();
   const payload = {
-    description: document.getElementById('input-rec-description').value.trim(),
-    amount: document.getElementById('input-rec-amount').value,
-    type: document.getElementById('input-rec-type').value,
-    category_id: parseInt(document.getElementById('input-rec-category').value, 10),
-    frequency: document.getElementById('input-rec-frequency').value,
-    due_day: currentRecurringDueDay(),
-    start_date: document.getElementById('input-rec-start').value,
-    is_active: document.getElementById('input-rec-active').checked,
+    description: document.getElementById('input-rec-expense-description').value.trim(),
+    amount: document.getElementById('input-rec-expense-amount').value,
+    type: 'expense',
+    category_id: parseInt(document.getElementById('input-rec-expense-category').value, 10),
+    frequency: document.getElementById('input-rec-expense-frequency').value,
+    due_day: currentRecurringExpenseDueDay(),
+    start_date: document.getElementById('input-rec-expense-start').value,
+    is_active: document.getElementById('input-rec-expense-active').checked,
   };
   if (idVal) payload.id = parseInt(idVal, 10);
-  if (payload.type === 'income') {
-    payload.income_source = document.getElementById('input-rec-income-source').value;
-  }
 
   if (!payload.description || !payload.amount || !payload.start_date) {
     showToast('⚠️ Preencha descrição, valor e data inicial.');
@@ -419,7 +476,42 @@ async function saveRecurring() {
   });
   const data = await response.json().catch(() => ({}));
   if (response.ok && data.success) {
-    closeModal('modal-recurring');
+    closeModal('modal-recurring-expense');
+    showToast('✅ Recorrência salva!');
+    setTimeout(() => location.reload(), 600);
+  } else {
+    showToast('❌ ' + (data.error || 'Erro ao salvar.'));
+  }
+}
+
+async function saveRecurringIncome() {
+  const idVal = document.getElementById('input-rec-income-id').value.trim();
+  const payload = {
+    description: document.getElementById('input-rec-income-description').value.trim(),
+    amount: document.getElementById('input-rec-income-amount').value,
+    type: 'income',
+    frequency: document.getElementById('input-rec-income-frequency').value,
+    due_day: currentRecurringIncomeDueDay(),
+    start_date: document.getElementById('input-rec-income-start').value,
+    is_active: document.getElementById('input-rec-income-active').checked,
+    income_source: document.getElementById('input-rec-income-source').value,
+  };
+  if (idVal) payload.id = parseInt(idVal, 10);
+
+  if (!payload.description || !payload.amount || !payload.start_date) {
+    showToast('⚠️ Preencha descrição, valor e data inicial.');
+    return;
+  }
+
+  const csrf = getCSRFToken();
+  const response = await fetch('/recurring/save/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (response.ok && data.success) {
+    closeModal('modal-recurring-income');
     showToast('✅ Recorrência salva!');
     setTimeout(() => location.reload(), 600);
   } else {
@@ -790,6 +882,18 @@ document.addEventListener('DOMContentLoaded', function() {
   const deleteTxButton = document.getElementById('btn-confirm-delete-transaction');
   if (deleteTxButton) {
     deleteTxButton.addEventListener('click', confirmDeleteTransaction);
+  }
+
+  // Event listeners para frequência de recorrência de despesa
+  const expenseFreq = document.getElementById('input-rec-expense-frequency');
+  if (expenseFreq) {
+    expenseFreq.addEventListener('change', syncRecurringExpenseDueVisibility);
+  }
+
+  // Event listeners para frequência de recorrência de receita
+  const incomeFreq = document.getElementById('input-rec-income-frequency');
+  if (incomeFreq) {
+    incomeFreq.addEventListener('change', syncRecurringIncomeDueVisibility);
   }
 });
 
@@ -1406,10 +1510,6 @@ document.addEventListener('DOMContentLoaded', function () {
   if (document.getElementById('chartLine'))     { initLineChart();        }
 
   ensureRecurringMonthlyDaySelect();
-  const recFreq = document.getElementById('input-rec-frequency');
-  if (recFreq) recFreq.addEventListener('change', syncRecurringDueVisibility);
-  const recType = document.getElementById('input-rec-type');
-  if (recType) recType.addEventListener('change', syncRecurringTypeVisibility);
 
   // Login e cadastro são tratados pelo Django (POST de formulário).
   // Não há interceptação de clique aqui.

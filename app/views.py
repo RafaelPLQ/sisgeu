@@ -63,11 +63,17 @@ def ensure_default_categories(user):
 
 
 def refresh_alerts(user):
+    """
+    Recria alertas ativos com base no estado atual do usuário.
+    Alertas são criados quando a condição existe e removidos automaticamente
+    quando a situação é revertida — não há "marcar como lido".
+    """
     today = timezone.localdate()
     current_month = get_month_start(today)
 
-    income = Transaction.objects.filter(user=user, type='income').aggregate(total=Sum('amount'))['total'] or 0
-    expense = Transaction.objects.filter(user=user, type='expense').aggregate(total=Sum('amount'))['total'] or 0
+    # --- Saldo negativo ---
+    income = Transaction.objects.filter(user=user, type='income', date__lte=today).aggregate(total=Sum('amount'))['total'] or 0
+    expense = Transaction.objects.filter(user=user, type='expense', date__lte=today).aggregate(total=Sum('amount'))['total'] or 0
     balance = income - expense
 
     if balance < 0:
@@ -79,11 +85,15 @@ def refresh_alerts(user):
             defaults={
                 'title': 'Saldo negativo',
                 'message': 'Seu saldo atual está negativo. Reveja seus lançamentos e reduza gastos.',
-                'read': False,
             }
         )
+    else:
+        # Saldo voltou ao normal: remove o alerta
+        Alert.objects.filter(user=user, alert_type='saldo_negativo').delete()
 
+    # --- Orçamentos ---
     budgets = Budget.objects.filter(user=user, month=current_month).select_related('category')
+
     for budget in budgets:
         spent = Transaction.objects.filter(
             user=user,
@@ -103,9 +113,10 @@ def refresh_alerts(user):
                     defaults={
                         'title': f'Orçamento {budget.category.name} estourado',
                         'message': f'Você gastou R$ {spent:.2f} de R$ {budget.amount:.2f} em {budget.category.name}.',
-                        'read': False,
                     }
                 )
+                # Se agora é 100%, remove o alerta de 80% caso exista
+                Alert.objects.filter(user=user, alert_type='orcamento_80', category=budget.category).delete()
             elif spent >= budget.amount * Decimal('0.8'):
                 Alert.objects.update_or_create(
                     user=user,
@@ -114,12 +125,27 @@ def refresh_alerts(user):
                     goal=None,
                     defaults={
                         'title': f'Orçamento {budget.category.name} em alerta',
-                        'message': f'Você usou {spent:.2f} de {budget.amount:.2f} em {budget.category.name}.',
-                        'read': False,
+                        'message': f'Você usou R$ {spent:.2f} de R$ {budget.amount:.2f} em {budget.category.name}.',
                     }
                 )
+            else:
+                # Gasto voltou abaixo de 80%: remove ambos os alertas de orçamento
+                Alert.objects.filter(
+                    user=user,
+                    alert_type__in=['orcamento_80', 'orcamento_100'],
+                    category=budget.category,
+                ).delete()
 
+    # Remove alertas de orçamento cujo orçamento deixou de existir no mês
+    budget_category_ids = [b.category_id for b in budgets]
+    Alert.objects.filter(
+        user=user,
+        alert_type__in=['orcamento_80', 'orcamento_100'],
+    ).exclude(category_id__in=budget_category_ids).delete()
+
+    # --- Metas com prazo ---
     goals = Goal.objects.filter(user=user, deadline__isnull=False)
+
     for goal in goals:
         if goal.current_amount < goal.target_amount:
             days_left = (goal.deadline - today).days
@@ -132,9 +158,17 @@ def refresh_alerts(user):
                     defaults={
                         'title': f'Meta {goal.name} com prazo próximo',
                         'message': f'A meta "{goal.name}" vence em {goal.deadline.strftime("%d/%m/%Y")}. Faltam R$ {goal.target_amount - goal.current_amount:.2f}.',
-                        'read': False,
                     }
                 )
+            else:
+                # Meta fora do intervalo de alerta: remove
+                Alert.objects.filter(user=user, alert_type='meta_prazo', goal=goal).delete()
+        else:
+            # Meta concluída: remove o alerta
+            Alert.objects.filter(user=user, alert_type='meta_prazo', goal=goal).delete()
+
+    # Remove alertas de metas que não existem mais
+    Alert.objects.filter(user=user, alert_type='meta_prazo').exclude(goal_id__in=[g.pk for g in goals]).delete()
 
 
 class IndexView(LoginRequiredMixin, View):
@@ -147,8 +181,8 @@ class IndexView(LoginRequiredMixin, View):
 
         ensure_default_categories(user)
 
-        income_total = Transaction.objects.filter(user=user, type='income').aggregate(total=Sum('amount'))['total'] or 0
-        expense_total = Transaction.objects.filter(user=user, type='expense').aggregate(total=Sum('amount'))['total'] or 0
+        income_total = Transaction.objects.filter(user=user, type='income', date__lte=now).aggregate(total=Sum('amount'))['total'] or 0
+        expense_total = Transaction.objects.filter(user=user, type='expense', date__lte=now).aggregate(total=Sum('amount'))['total'] or 0
         current_balance = income_total - expense_total
 
         monthly_income = Transaction.objects.filter(
@@ -549,13 +583,11 @@ class AlertasView(LoginRequiredMixin, View):
         ensure_default_categories(user)
         refresh_alerts(user)
 
-        unread = Alert.objects.filter(user=user, read=False).order_by('-created_at')
-        read = Alert.objects.filter(user=user, read=True).order_by('-created_at')[:10]
+        alerts = Alert.objects.filter(user=user).order_by('-created_at')
 
         context = {
             'categories': Category.objects.filter(user=user).order_by('name'),
-            'unread_alerts': unread,
-            'read_alerts': read,
+            'alerts': alerts,
         }
         return render(request, 'pages/alertas.html', context)
 
@@ -823,14 +855,6 @@ class DeleteGoalView(LoginRequiredMixin, View):
         return JsonResponse({'success': True})
 
 
-class MarkAlertsReadView(LoginRequiredMixin, View):
-    login_url = settings.LOGIN_URL
-
-    def post(self, request, *args, **kwargs):
-        Alert.objects.filter(user=request.user, read=False).update(read=True)
-        return JsonResponse({'success': True})
-
-
 class AddTransactionView(LoginRequiredMixin, View):
     login_url = settings.LOGIN_URL
 
@@ -995,10 +1019,15 @@ class SaveRecurringView(LoginRequiredMixin, View):
                 status=400,
             )
 
-        try:
-            category = get_object_or_404(Category, id=int(data.get('category_id')), user=user)
-        except (TypeError, ValueError):
-            return JsonResponse({'success': False, 'error': 'Categoria inválida.'}, status=400)
+        category = None
+        category_id = data.get('category_id')
+        if category_id:
+            try:
+                category = get_object_or_404(Category, id=int(category_id), user=user)
+            except (TypeError, ValueError):
+                return JsonResponse({'success': False, 'error': 'Categoria inválida.'}, status=400)
+        elif tx_type == 'expense':
+            return JsonResponse({'success': False, 'error': 'Categoria obrigatória para despesas.'}, status=400)
 
         try:
             amount = Decimal(str(data.get('amount')).strip().replace(',', '.'))
@@ -1039,6 +1068,36 @@ class SaveRecurringView(LoginRequiredMixin, View):
         rec.start_date = start_date
         rec.is_active = bool(is_active)
         rec.save()
+
+        # Create transaction immediately on the due day
+        from .recurring_logic import monthly_due_date
+        if rec.frequency == 'monthly':
+            transaction_date = monthly_due_date(start_date.year, start_date.month, due_day)
+        else:  # weekly
+            # Find the first occurrence on or after start_date
+            from datetime import timedelta
+            transaction_date = start_date
+            while transaction_date.weekday() != due_day:
+                transaction_date += timedelta(days=1)
+
+        # Check if transaction already exists for this date
+        existing_tx = Transaction.objects.filter(
+            user=user,
+            recurring=rec,
+            date=transaction_date
+        ).first()
+
+        if not existing_tx:
+            Transaction.objects.create(
+                user=user,
+                amount=amount,
+                description=description,
+                date=transaction_date,
+                category=category,
+                type=tx_type,
+                income_source=income_source,
+                recurring=rec,
+            )
 
         return JsonResponse({'success': True, 'id': rec.id})
 
