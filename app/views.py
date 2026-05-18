@@ -1109,3 +1109,10 @@ class DeleteRecurringView(LoginRequiredMixin, View):
         rec = get_object_or_404(RecurringTransaction, id=pk, user=request.user)
         rec.delete()
         return JsonResponse({'success': True})
+
+
+class EducacaoView(LoginRequiredMixin, View):
+    login_url = settings.LOGIN_URL
+ 
+    def get(self, request, *args, **kwargs):
+        return render(request, 'pages/educacao.html')

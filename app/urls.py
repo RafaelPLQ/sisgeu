@@ -23,4 +23,5 @@ urlpatterns = [
     path('delete-transaction/<int:pk>/', views.DeleteTransactionView.as_view(), name='delete_transaction'),
     path('recurring/save/', views.SaveRecurringView.as_view(), name='save_recurring'),
     path('recurring/delete/<int:pk>/', views.DeleteRecurringView.as_view(), name='delete_recurring'),
+    path('educacao/', views.EducacaoView.as_view(), name='educacao'),
 ]

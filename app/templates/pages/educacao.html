@@ -1,0 +1,379 @@
+{% extends 'base.html' %}
+
+{% block title %}Educação Financeira{% endblock %}
+
+{% block content %}
+
+<div class="page active" id="pg-educacao">
+
+  <div class="page-header">
+    <div>
+      <div class="page-title">Educação Financeira</div>
+      <div class="page-sub">Dicas e recursos para cuidar melhor do seu dinheiro</div>
+    </div>
+  </div>
+
+  <!-- Regra 50-30-20 destaque -->
+  <div class="edu-destaque">
+    <div class="edu-destaque-icon">💡</div>
+    <div class="edu-destaque-body">
+      <div class="edu-destaque-titulo">Regra 50-30-20</div>
+      <div class="edu-destaque-texto">
+        Uma das estratégias mais simples e eficazes para organizar o orçamento:
+        <strong>50%</strong> para necessidades (moradia, alimentação, transporte),
+        <strong>30%</strong> para desejos (lazer, compras, assinaturas) e
+        <strong>20%</strong> para poupança e investimentos.
+        Use o SISGEU para verificar se sua distribuição está dentro desses limites!
+      </div>
+    </div>
+  </div>
+
+  <!-- Cards de dicas -->
+  <div class="edu-section-label">📚 Dicas Essenciais</div>
+
+  <div class="edu-grid">
+
+    <div class="edu-card">
+      <div class="edu-card-icon">📋</div>
+      <div class="edu-card-titulo">Registre tudo</div>
+      <div class="edu-card-texto">
+        Anote cada gasto, por menor que seja. Estudantes que controlam despesas fixas conseguem reduzir até 20% dos gastos mensais. Use os Lançamentos do SISGEU para isso!
+      </div>
+    </div>
+
+    <div class="edu-card">
+      <div class="edu-card-icon">🛡️</div>
+      <div class="edu-card-titulo">Reserva de emergência</div>
+      <div class="edu-card-texto">
+        Comece guardando R$ 10 por semana. Com consistência, esse valor cresce e vira um colchão para imprevistos — celular quebrado, urgência médica, conserto de transporte.
+      </div>
+    </div>
+
+    <div class="edu-card">
+      <div class="edu-card-icon">🎯</div>
+      <div class="edu-card-titulo">Defina metas concretas</div>
+      <div class="edu-card-texto">
+        Metas vagas como "economizar mais" não funcionam. Defina valores e prazos: "guardar R$ 500 em 3 meses para o intercâmbio". Use as Metas Financeiras do SISGEU!
+      </div>
+    </div>
+
+    <div class="edu-card">
+      <div class="edu-card-icon">💳</div>
+      <div class="edu-card-titulo">Cuidado com o crédito</div>
+      <div class="edu-card-texto">
+        Cartão de crédito e parcelamento têm juros altos. Se não tem o dinheiro para pagar à vista, a melhor saída é esperar. Crédito fácil hoje pode virar um fardo amanhã.
+      </div>
+    </div>
+
+    <div class="edu-card">
+      <div class="edu-card-icon">🍳</div>
+      <div class="edu-card-titulo">Cozinhe mais, coma fora menos</div>
+      <div class="edu-card-texto">
+        Alimentação é um dos maiores gastos do estudante. Cozinhar em casa pode reduzir significativamente esse custo. Planeje refeições semanalmente para evitar desperdício.
+      </div>
+    </div>
+
+    <div class="edu-card">
+      <div class="edu-card-icon">📅</div>
+      <div class="edu-card-titulo">Antecipe despesas anuais</div>
+      <div class="edu-card-texto">
+        Inclua no orçamento gastos que se repetem todo ano: material escolar, renovação de software, passagens. Prever é melhor do que ser surpreendido.
+      </div>
+    </div>
+
+    <div class="edu-card">
+      <div class="edu-card-icon">🤝</div>
+      <div class="edu-card-titulo">Compartilhe custos</div>
+      <div class="edu-card-texto">
+        Divida assinaturas de streaming, transporte e até moradia com colegas. Pequenas divisões geram economias relevantes ao longo do mês.
+      </div>
+    </div>
+
+    <div class="edu-card">
+      <div class="edu-card-icon">📈</div>
+      <div class="edu-card-titulo">Invista mesmo pouco</div>
+      <div class="edu-card-texto">
+        R$ 50/mês no Tesouro Selic geram mais de R$ 3.500 em 5 anos com juros compostos. Quem começa cedo tem muito mais vantagem no longo prazo.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Links externos -->
+  <div class="edu-section-label" style="margin-top:32px">🔗 Recursos Externos</div>
+
+  <div class="edu-links">
+
+    <!-- Banco Central -->
+    <a class="edu-link-card"
+       href="https://www.bcb.gov.br/cidadaniafinanceira"
+       target="_blank"
+       rel="noopener">
+      <div class="edu-link-icon">🏦</div>
+      <div class="edu-link-body">
+        <div class="edu-link-titulo">Banco Central — Cidadania Financeira</div>
+        <div class="edu-link-desc">
+          Guias, ferramentas e calculadoras sobre crédito, juros, dívidas e controle financeiro.
+        </div>
+      </div>
+      <div class="edu-link-seta">→</div>
+    </a>
+
+    <!-- Tesouro Direto -->
+    <a class="edu-link-card"
+       href="https://www.tesourodireto.com.br/"
+       target="_blank"
+       rel="noopener">
+      <div class="edu-link-icon">💰</div>
+      <div class="edu-link-body">
+        <div class="edu-link-titulo">Tesouro Direto</div>
+        <div class="edu-link-desc">
+          Plataforma oficial para aprender e investir em títulos públicos com segurança e baixo valor inicial.
+        </div>
+      </div>
+      <div class="edu-link-seta">→</div>
+    </a>
+
+    <!-- Mobills -->
+    <a class="edu-link-card"
+       href="https://mobills.com.br/blog/"
+       target="_blank"
+       rel="noopener">
+      <div class="edu-link-icon">📱</div>
+      <div class="edu-link-body">
+        <div class="edu-link-titulo">Mobills Blog</div>
+        <div class="edu-link-desc">
+          Conteúdos sobre orçamento pessoal, controle de gastos, cartões e organização financeira.
+        </div>
+      </div>
+      <div class="edu-link-seta">→</div>
+    </a>
+
+    <!-- iDinheiro -->
+    <a class="edu-link-card"
+       href="https://www.idinheiro.com.br/"
+       target="_blank"
+       rel="noopener">
+      <div class="edu-link-icon">📊</div>
+      <div class="edu-link-body">
+        <div class="edu-link-titulo">iDinheiro</div>
+        <div class="edu-link-desc">
+          Artigos e dicas práticas sobre finanças pessoais, investimentos e educação financeira.
+        </div>
+      </div>
+      <div class="edu-link-seta">→</div>
+    </a>
+
+    <!-- Me Poupe -->
+    <a class="edu-link-card"
+       href="https://www.youtube.com/@MePoupe"
+       target="_blank"
+       rel="noopener">
+      <div class="edu-link-icon">▶️</div>
+      <div class="edu-link-body">
+        <div class="edu-link-titulo">Me Poupe! — YouTube</div>
+        <div class="edu-link-desc">
+          Canal da Nathalia Arcuri com dicas sobre organização financeira,
+          investimentos e independência financeira.
+        </div>
+      </div>
+      <div class="edu-link-seta">→</div>
+    </a>
+
+    <!-- Primo Rico -->
+    <a class="edu-link-card"
+       href="https://www.youtube.com/@primorico"
+       target="_blank"
+       rel="noopener">
+      <div class="edu-link-icon">▶️</div>
+      <div class="edu-link-body">
+        <div class="edu-link-titulo">O Primo Rico — YouTube</div>
+        <div class="edu-link-desc">
+          Conteúdo sobre investimentos, mentalidade financeira e construção de patrimônio.
+        </div>
+      </div>
+      <div class="edu-link-seta">→</div>
+    </a>
+
+    <!-- Nath Finanças -->
+    <a class="edu-link-card"
+       href="https://www.youtube.com/@nathfinancas"
+       target="_blank"
+       rel="noopener">
+      <div class="edu-link-icon">▶️</div>
+      <div class="edu-link-body">
+        <div class="edu-link-titulo">Nath Finanças — YouTube</div>
+        <div class="edu-link-desc">
+          Educação financeira simples e acessível para orçamento,
+          dívidas e planejamento financeiro.
+        </div>
+      </div>
+      <div class="edu-link-seta">→</div>
+    </a>
+
+    <!-- Economirna -->
+    <a class="edu-link-card"
+       href="https://www.youtube.com/@Economirna"
+       target="_blank"
+       rel="noopener">
+      <div class="edu-link-icon">▶️</div>
+      <div class="edu-link-body">
+        <div class="edu-link-titulo">Economirna — YouTube</div>
+        <div class="edu-link-desc">
+          Dicas práticas de organização financeira, investimentos e independência financeira.
+        </div>
+      </div>
+      <div class="edu-link-seta">→</div>
+    </a>
+
+  </div>
+
+  <!-- Nota de rodapé -->
+  <div style="margin-top:32px;padding:16px;background:var(--surface2, rgba(255,255,255,0.04));border-radius:10px;font-size:12px;color:var(--text3);line-height:1.6">
+    💬 <strong>Lembre-se:</strong> educação financeira é um hábito, não um evento.
+    Pequenas ações consistentes — registrar gastos, evitar compras por impulso,
+    guardar um pouco todo mês — fazem mais diferença do que qualquer dica isolada.
+    O SISGEU está aqui para ajudar nessa jornada!
+  </div>
+
+</div><!-- /pg-educacao -->
+
+<style>
+/* ── Destaque ── */
+.edu-destaque {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  background: linear-gradient(135deg, rgba(99,179,237,0.12), rgba(99,179,237,0.04));
+  border: 1px solid rgba(99,179,237,0.25);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 28px;
+}
+
+.edu-destaque-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.edu-destaque-titulo {
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+
+.edu-destaque-texto {
+  font-size: 13px;
+  color: var(--text2, #ccc);
+  line-height: 1.6;
+}
+
+/* ── Section label ── */
+.edu-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text3, #888);
+  margin-bottom: 14px;
+}
+
+/* ── Cards grid ── */
+.edu-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.edu-card {
+  background: var(--surface1, rgba(255,255,255,0.05));
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: 12px;
+  padding: 18px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.edu-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+}
+
+.edu-card-icon {
+  font-size: 22px;
+  margin-bottom: 10px;
+}
+
+.edu-card-titulo {
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.edu-card-texto {
+  font-size: 12px;
+  color: var(--text2, #ccc);
+  line-height: 1.6;
+}
+
+/* ── Links externos ── */
+.edu-links {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.edu-link-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface1, rgba(255,255,255,0.05));
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: 12px;
+  padding: 16px 18px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.edu-link-card:hover {
+  background: var(--surface2, rgba(255,255,255,0.09));
+  border-color: rgba(99,179,237,0.35);
+}
+
+.edu-link-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.edu-link-body {
+  flex: 1;
+}
+
+.edu-link-titulo {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 3px;
+}
+
+.edu-link-desc {
+  font-size: 12px;
+  color: var(--text2, #aaa);
+  line-height: 1.5;
+}
+
+.edu-link-seta {
+  font-size: 18px;
+  color: var(--text3, #888);
+  flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .edu-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+{% endblock %}
